@@ -23,6 +23,14 @@
 #define IPV6_EXT_MOBILITY			135
 
 /**
+ * IPv6 extension header structure.
+ */
+typedef struct __attribute__((packed)) IPV6ExtHeader {
+    uint8_t next_hdr; /* Next header */
+    uint8_t hdr_ext_len; /* Header extension length */
+} IPV6ExtHeader_t;
+
+/**
  * IPv6 header structure.
  */
 typedef struct __attribute__((packed)) IPV6Header {
@@ -33,14 +41,6 @@ typedef struct __attribute__((packed)) IPV6Header {
 	uint8_t 	src[16];   /* Source address */
 	uint8_t 	dst[16];   /* Destination address */
 } IPV6Header_t;
-
-/**
- * IPv6 extension header structure.
- */
-typedef struct __attribute__((packed)) IPV6ExtHeader {
-    uint8_t next_hdr; /* Next header */
-    uint8_t hdr_ext_len; /* Header extension length */
-} IPV6ExtHeader_t;
 
 // sanity checks
 _Static_assert(sizeof(IPV6Header_t) == 40, "IPV6Header_t's length must be 40 bytes");
