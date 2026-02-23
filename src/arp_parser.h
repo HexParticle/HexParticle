@@ -14,9 +14,10 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 
-#define ARP_REQUEST		1
-#define ARP_REPLY		2
+#define ARP_REQUEST		1 /* ARP request */
+#define ARP_REPLY		2 /* ARP reply */
 
+/// ARP packet header structure
 typedef struct __attribute__((__packed__)) ARPHeader {
     uint16_t    htype;  // Hardware type (for e.g.: 1 for Ethernet)
     uint16_t    ptype;  // Protocol type (for: e.g.: 0x0800 for IPv4)
@@ -29,6 +30,9 @@ typedef struct __attribute__((__packed__)) ARPHeader {
     uint8_t     tpa[4]; // Target protocol address (IPv4)
 } ARPHeader_t;
 
+/// Parse an ARP packet from a raw byte stream
+/// @param stream Pointer to the raw packet bytes
+/// @return ProtocolNode representing the parsed ARP packet
 HEX_P ProtocolNode_t* parse_arp_packet(const uint8_t* stream);
 
 #endif

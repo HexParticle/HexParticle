@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "hex.h"
 #include "proto_node.h"
 
 /**
@@ -28,6 +29,6 @@ typedef struct __attribute__((packed)) TCPHeader {
     uint8_t     options[];
 } TCPHeader_t;
 
-ProtocolNode_t* parse_tcp_packet(const uint8_t* stream);
+HEX_P ProtocolNode_t* parse_tcp_packet(const uint8_t* stream);
 
 #endif

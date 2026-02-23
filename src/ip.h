@@ -16,4 +16,7 @@
 #define IPPROTO_EIGRP          0x58 /* Enhanced Interior Gateway Routing Protocol*/
 #define IPPROTO_OSPF           0x59 /* Open Shortest Path First */
 
+#define IPV4_ADDR_LEN		   0x04 /* IPv4 address's length: 4-bytes */
+#define IPV6_ADDR_LEN		   0x10 /* IPv6 address's length: 16-bytes */
+
 #endif

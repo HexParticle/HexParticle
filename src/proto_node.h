@@ -20,11 +20,9 @@ typedef enum ProtocolType {
 
 typedef struct ProtocolNode {
     enum ProtocolType 		type;
-    void 					*hdr;
+    void* 					hdr;
     uint32_t				hdr_len;
     struct ProtocolNode* 	next;
 } ProtocolNode_t;
-
-void free_protocol_node(ProtocolNode_t* node);
 
 #endif

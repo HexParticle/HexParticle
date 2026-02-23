@@ -3,21 +3,23 @@
  * Copyright (c) 2023 Kagati Foundation
  */
 
-#ifndef HEX_H
-#define HEX_H
-
 #include <pcap.h>
-#include "ether_parser.h"
+#include "proto_node.h"
 
+/* Macro for symbol visibility, currently empty */
 #define HEX_P
+
 #define HEX_OUT_BUF_SIZE 4096
+
+#ifndef HEX_PARTICLE_ANALYZER_H
+#define HEX_PARTICLE_ANALYZER_H
 
 /**
  * @struct HexInstance_t
  * @brief Container for the libpcap session handle.
  */
 typedef struct _HexInstnace {
-    pcap_t* handle;
+    pcap_t* 	handle;	/* libpcap session handle */
 } HexInstnace_t;
 
 typedef struct _RawPacketStream {

@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-HEX_P HexInstnace_t create_hex_instance(const char* device) {
+HexInstnace_t create_hex_instance(const char* device) {
 	char errbuff[PCAP_ERRBUF_SIZE];
     pcap_t* handle = pcap_open_live(device, BUFSIZ, 1, 1000, errbuff);
     if (!handle) {
@@ -24,14 +24,14 @@ HEX_P HexInstnace_t create_hex_instance(const char* device) {
     return hex_instance;
 }
 
-HEX_P void free_hex_instance(HexInstnace_t* handle) {
+void free_hex_instance(HexInstnace_t* handle) {
 	if (handle == NULL || handle->handle == NULL) return;
 
 	pcap_close(handle->handle);
 	handle->handle = NULL;
 }
 
-HEX_P ProtocolNode_t* read_next_packet(const HexInstnace_t* instance) {
+ProtocolNode_t* read_next_packet(const HexInstnace_t* instance) {
 	struct pcap_pkthdr *header;
 	const char* stream;
 	int res = pcap_next_ex(instance->handle, &header, &stream);
@@ -46,8 +46,9 @@ HEX_P ProtocolNode_t* read_next_packet(const HexInstnace_t* instance) {
 	return NULL;
 }
 
-HEX_P void free_packet(ProtocolNode_t* head) {
+void free_packet(ProtocolNode_t* head) {
 	ProtocolNode_t* current = head;
+
     while (current != NULL) {
         ProtocolNode_t* next_node = current->next;
         

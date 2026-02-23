@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-HEX_P ProtocolNode_t* parse_arp_packet(const uint8_t* stream) {
+ProtocolNode_t* parse_arp_packet(const uint8_t* stream) {
 	const size_t arp_header_size = sizeof(ARPHeader_t);
 
 	ARPHeader_t* arp_hdr = malloc(arp_header_size);

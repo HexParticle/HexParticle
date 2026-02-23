@@ -8,17 +8,18 @@
 
 #include <stdint.h>
 
+#include "hex.h"
 #include "proto_node.h"
 
-#define UDP_HEADER_LEN		8 // bytes
+#define UDP_HEADER_LEN		8 // 8-bytes
 
 typedef struct UDPHeader {
-	uint16_t	sport;
-	uint16_t	dport;
-	uint16_t	length;
-	uint16_t	cksum;
+	uint16_t	sport;	/* Source port */
+	uint16_t	dport;	/* Destination port */
+	uint16_t	length; /* Total length */
+	uint16_t	cksum;  /* Checksum */
 } UDPHeader_t;
 
-ProtocolNode_t* parse_udp_packet(const uint8_t* stream);
+HEX_P ProtocolNode_t* parse_udp_packet(const uint8_t* stream);
 
 #endif

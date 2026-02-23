@@ -13,12 +13,13 @@
 
 #include "proto_node.h"
 #include "hex.h"
+#include "ip.h"
 
 /**
  * IPv4 header
  */
 typedef struct __attribute__((packed)) IPV4Header {
-    uint8_t     ver_ihl;
+    uint8_t     ver_ihl;			/* Version and Internet Header Length */
     uint8_t     dscp_ecn;
     uint16_t    len;
     uint16_t    id;
@@ -26,8 +27,8 @@ typedef struct __attribute__((packed)) IPV4Header {
     uint8_t     ttl;
     uint8_t     proto;
     uint16_t    chk;
-    uint8_t     src[4];
-    uint8_t     dst[4];
+    uint8_t     src[IPV4_ADDR_LEN]; /* Source IPv4 address */
+    uint8_t     dst[IPV4_ADDR_LEN]; /* Destination IPv4 address */
 } IPV4Header_t;
 
 // sanity checks
@@ -64,8 +65,11 @@ _Static_assert(sizeof(IPV4Header_t) == 20, "IPV4Header_t's length must be 20 byt
 
 #define IPV4_PROTOCOL_NAME(code) IPV4_PROTOCOL_NAME_##code
 
-ProtocolNode_t* parse_ipv4_packet(const uint8_t* stream);
+/// Parse an IPv4 packet from a raw byte stream
+/// @param stream Pointer to the raw packet bytes
+/// @return ProtocolNode representing the parsed IPv4 packet
+HEX_P ProtocolNode_t* parse_ipv4_packet(const uint8_t* stream);
 
-char* ipv4_proto_name(uint16_t proto);
+HEX_P char* ipv4_proto_name(uint16_t proto);
 
 #endif
