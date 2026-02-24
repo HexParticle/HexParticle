@@ -4,6 +4,7 @@
  */
 
 #include "hex.h"
+#include "ether_parser.h"
 #include "ipv4_parser.h"
 #include "tcp_parser.h"
 #include "udp_parser.h"
@@ -17,7 +18,15 @@ static void mac_to_string(const uint8_t mac[MAC_ADDR_LEN], char *out) {
             mac[3], mac[4], mac[5]);
 }
 
-void dump_ether_header(const EtherHeader_t* header) {
+static void dump_vlan_tags(const VlanTag_t* tags, int count) {
+	for (int i = 0; i < count; i++) {
+		const VlanTag_t tag = tags[i];
+		printf("   TPID: %d\n", tag.tpid);
+		printf("   TCI: %d\n", tag.tci);
+	}
+}
+
+static void dump_ether_header(const EtherHeader_t* header) {
     if (header == NULL) {
         printf("NULL\n");
         return;
@@ -30,9 +39,13 @@ void dump_ether_header(const EtherHeader_t* header) {
     mac_to_string(header->dst_mac, dst);
 
     printf("Ethernet(FROM %s TO %s)\n", src, dst);
+
+	if (header->vlan_count > 0) {
+		dump_vlan_tags(header->vlans, header->vlan_count);
+	}
 }
 
-void dump_ipv4_header(const IPV4Header_t* header) {
+static void dump_ipv4_header(const IPV4Header_t* header) {
 	if (header == NULL) {
         printf("NULL\n");
         return;
@@ -50,7 +63,7 @@ void dump_ipv4_header(const IPV4Header_t* header) {
 	);
 }
 
-void dump_arp_header(const ARPHeader_t* header) {
+static void dump_arp_header(const ARPHeader_t* header) {
 	if (header == NULL) {
         printf("NULL\n");
         return;
@@ -82,7 +95,7 @@ void dump_arp_header(const ARPHeader_t* header) {
 	}
 }
 
-void dump_tcp_header(const TCPHeader_t* header) {
+static void dump_tcp_header(const TCPHeader_t* header) {
 	if (header == NULL) {
 		printf("NULL\n");
 		return;
@@ -91,7 +104,7 @@ void dump_tcp_header(const TCPHeader_t* header) {
 	printf("    TCP(FROM %d TO %d)", header->sport, header->dport);
 }
 
-void dump_udp_header(const UDPHeader_t* header) {
+static void dump_udp_header(const UDPHeader_t* header) {
 	if (header == NULL) {
 		printf("NULL");
 		return;
@@ -100,7 +113,7 @@ void dump_udp_header(const UDPHeader_t* header) {
 	printf("    UDP(FROM %d TO %d)", header->sport, header->dport);
 }
 
-void dump_node(ProtocolNode_t* node) {
+static void dump_node(ProtocolNode_t* node) {
 	ProtocolNode_t* current_node = node;
 	
 	while (current_node != NULL) {
@@ -129,6 +142,7 @@ void dump_node(ProtocolNode_t* node) {
 	printf("\n");
 }
 
+#ifdef RUN_MAIN
 int main(int argc, char** argv) {
 	HexInstnace_t instance = create_hex_instance("en0");
 
@@ -136,9 +150,11 @@ int main(int argc, char** argv) {
 		ProtocolNode_t* result = read_next_packet(&instance);
 		if (result != NULL) {
 			dump_node(result);
-			free_protocol_node(result);
+			free_packet(result);
 		}
 	}
 
 	free_hex_instance(&instance);
 }
+
+#endif

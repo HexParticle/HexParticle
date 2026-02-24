@@ -49,6 +49,7 @@ ProtocolNode_t* parse_ipv6_packet(const RawPacketStream_t* stream) {
 	ProtocolNode_t* ip_node = malloc(sizeof(ProtocolNode_t));
 	ip_node->type = PROTO_IPV6;
 	ip_node->hdr = ip_hdr;
+	ip_node->next = NULL;
 
 	size_t offset = IPV6_HEADER_LEN;
 	uint8_t next = ip_hdr->next_hdr;
@@ -63,13 +64,23 @@ ProtocolNode_t* parse_ipv6_packet(const RawPacketStream_t* stream) {
 
 	const* next_lyr_stream = raw + offset;
 
+	int skip_proto = 0; // do not skip this protocol
+
 	if (next == IPPROTO_TCP) {
-		ProtocolNode_t* tcp_node = parse_tcp_packet(next_lyr_stream);
-		ip_node->next = tcp_node;
+		ip_node->next = parse_tcp_packet(next_lyr_stream);
 	}
 	else if (next == IPPROTO_UDP) {
-		ProtocolNode_t* udp_node = parse_udp_packet(next_lyr_stream);
-		ip_node->next = udp_node;
+		ip_node->next = parse_udp_packet(next_lyr_stream);
+	}
+	else {
+		fprintf(stderr, "Skipping IPPROTO '%d'.\n", next);
+		skip_proto = 1; // skip the proto
+	}
+
+	if (ip_node->next == NULL || skip_proto == 1) {
+		free(ip_node);
+		free(ip_hdr);
+		return NULL;
 	}
 
 	return ip_node;

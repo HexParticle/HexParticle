@@ -18,7 +18,7 @@ static int parse_vlan_tags(EtherHeader_t* const eth_header, const uint8_t* strea
 ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 	EtherHeader_t* eth_header = malloc(sizeof(EtherHeader_t));
 
-	if (!eth_header) {
+	if (eth_header == NULL) {
 		fprintf(stderr, "Failed to allocate memory for Ethernet header\n");
 		return NULL;
 	}
@@ -37,7 +37,7 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 	}
 
 	ProtocolNode_t* ether_node = malloc(sizeof(ProtocolNode_t));
-	if (!ether_node) {
+	if (ether_node == NULL) {
 		fprintf(stderr, "Failed to allocate memory for Ethernet ProtocolNode\n");
 		free(eth_header);
 		return NULL;
@@ -45,6 +45,7 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 
 	ether_node->type = PROTO_ETH;
 	ether_node->hdr = eth_header;
+	ether_node->next = NULL;
     
     if (eth_header->type <= 1500) {
         fprintf(stderr, "Skipping IEEE 802.3 frame (unsupported).\n");
@@ -52,6 +53,8 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 		free(ether_node);
         return NULL;
     }
+
+	int skip_packet = 0; // do not skip
 
 	if (eth_header->type == ETHER_TYPE_IPV4) {
 		ether_node->next = parse_ipv4_packet((stream + payload_off));
@@ -63,12 +66,25 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 		RawPacketStream_t raw_stream = { .stream = stream + payload_off, .length = len };
 		ether_node->next = parse_ipv6_packet(&raw_stream);
 	}
+	else {
+        fprintf(stderr, "Skipping EtherType '%d'.\n", eth_header->type);
+		skip_packet = 1; // skip this unsurpported packet
+	}
+
+	if (ether_node->next == NULL || skip_packet == 1) {
+		free(ether_node);
+		free(eth_header);
+		return NULL;
+	}
 
 	return ether_node;
 }
 
-static int parse_vlan_tags(EtherHeader_t* const eth_header, const uint8_t* stream, size_t len) {
+static int parse_vlan_tags(EtherHeader_t* eth_header, const uint8_t* stream, size_t len) {
 	int payload_off = ETHER_PAYLOAD_OFF;
+
+	// first parse the ether type
+	eth_header->type = (stream[12] << 8) | stream[13];
 
 	while (eth_header->type == ETHER_TYPE_VLAN) {
 		if (eth_header->vlan_count >= MAX_VLAN_STACK) {

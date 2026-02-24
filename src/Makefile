@@ -1,6 +1,6 @@
 OS = $(shell uname)
 EXT_LIBS = -lpcap
-BASE_FLAGS = -fPIC -Wall -Wextra -pedantic -ggdb -O3 -DRUN_MAIN
+BASE_FLAGS = -fPIC -Wall -Wextra -pedantic -ggdb -O3 # -DRUN_MAIN
 O_FLAGS := $(BASE_FLAGS)
 
 ifeq ($(OS),Darwin)

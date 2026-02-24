@@ -18,10 +18,7 @@ HexInstnace_t create_hex_instance(const char* device) {
         exit(EXIT_FAILURE);
     }
 
-	HexInstnace_t hex_instance;
-	hex_instance.handle = handle;
-
-    return hex_instance;
+	return (HexInstnace_t) { .handle = handle };
 }
 
 void free_hex_instance(HexInstnace_t* handle) {
@@ -51,13 +48,9 @@ void free_packet(ProtocolNode_t* head) {
 
     while (current != NULL) {
         ProtocolNode_t* next_node = current->next;
-        
-        if (current->hdr) {
-			free(current->hdr);
-			current->hdr = NULL;
-		}
+        if (current->hdr != NULL) { free(current->hdr); }
+
         free(current);
-        
         current = next_node;
     }
 }
