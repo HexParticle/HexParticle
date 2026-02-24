@@ -65,6 +65,16 @@ ProtocolNode._fields_ = [
 
 # --- Protocol Header Definitions ---
 
+MAX_VLAN_STACK = 4
+
+class VlanTag(ctypes.Structure):
+    """Maps to VlanTag_t"""
+    _pack_ = 1
+    _fields_ = [
+        ('tpid', 	ctypes.c_uint16),
+        ('tci',  	ctypes.c_uint16)
+    ]
+
 class EtherHeader(ctypes.Structure):
     """Maps to EtherHeader_t"""
     _pack_ = 1
@@ -72,7 +82,9 @@ class EtherHeader(ctypes.Structure):
         ('src_mac', 	CT_MAC_ADDRESS), 
         ('dst_mac', 	CT_MAC_ADDRESS),
         ('type', 		ctypes.c_uint16),
-        ('len', 		ctypes.c_uint32)
+        ('len', 		ctypes.c_uint32),
+        ('vlan_count',	ctypes.c_int),
+        ('vlans',		VlanTag * MAX_VLAN_STACK)
     ]
 
 class IPV4Header(ctypes.Structure):
@@ -140,20 +152,8 @@ class UDPHeader(ctypes.Structure):
     """Maps to UDPHeader_t. Represents the standard UDP segment header."""
     _pack_ = 1
     _fields_ = [
-        ('sport', ctypes.c_uint16),
-        ('dport', ctypes.c_uint16),
-        ('length', ctypes.c_uint16),
-        ('cksum', ctypes.c_uint16)
+        ('sport', 	ctypes.c_uint16),
+        ('dport', 	ctypes.c_uint16),
+        ('length', 	ctypes.c_uint16),
+        ('cksum', 	ctypes.c_uint16)
     ]
-
-
-__all__ = [
-    'IP_PROTOCOL_NAMES', 
-    'ETHER_TYPE_IPV4', 
-    'TCPHeader', 
-    'ProtocolNode', 
-    'ProtocolType',
-    'EtherHeader',
-    'IPV4Header',
-    'ARPHeader'
-]
