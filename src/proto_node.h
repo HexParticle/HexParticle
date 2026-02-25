@@ -25,4 +25,6 @@ typedef struct ProtocolNode {
     struct ProtocolNode* 	next;
 } ProtocolNode_t;
 
+ProtocolNode_t* create_proto_node(void);
+
 #endif

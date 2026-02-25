@@ -121,16 +121,17 @@ class HexParticle():
 
 
     def next_packet(self) -> PacketWrapper:
-        node = lib_hexp.read_next_packet(self.handle)
-        if not node:
+        node_ptr = lib_hexp.read_next_packet(self.handle)
+        if not node_ptr:
             return None
     
-        pwrapper = PacketWrapper(node)
-        
-        # free the node
-        lib_hexp.free_packet(node)
-
-        return pwrapper
+        try:
+            # Build the wrapper while the C memory is guaranteed to be locked
+            pwrapper = PacketWrapper(node_ptr)
+            return pwrapper
+        finally:
+            # Use the pointer directly to ensure we are freeing exactly what we got
+            lib_hexp.free_packet(node_ptr)
 
 
     def close(self):

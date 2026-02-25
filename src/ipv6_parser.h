@@ -26,8 +26,8 @@
  * IPv6 extension header structure.
  */
 typedef struct __attribute__((packed)) IPV6ExtHeader {
-    uint8_t next_hdr; /* Next header */
-    uint8_t hdr_ext_len; /* Header extension length */
+    uint8_t next_hdr; 		/* Next header */
+    uint8_t hdr_ext_len; 	/* Header extension length */
 } IPV6ExtHeader_t;
 
 /**

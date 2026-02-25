@@ -26,35 +26,27 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
     memcpy(eth_header->dst_mac, stream, MAC_ADDR_LEN);
     memcpy(eth_header->src_mac, stream + 6, MAC_ADDR_LEN);
 
-	eth_header->vlan_count = 0;
     eth_header->len = len;
 
 	int payload_off = parse_vlan_tags(eth_header, stream, len);
 
 	if (payload_off < 0) {
 		free(eth_header);
+		fflush(stderr);
 		return NULL;
 	}
 
-	ProtocolNode_t* ether_node = malloc(sizeof(ProtocolNode_t));
-	if (ether_node == NULL) {
-		fprintf(stderr, "Failed to allocate memory for Ethernet ProtocolNode\n");
-		free(eth_header);
-		return NULL;
-	}
-
+	ProtocolNode_t* ether_node = create_proto_node();
 	ether_node->type = PROTO_ETH;
 	ether_node->hdr = eth_header;
-	ether_node->next = NULL;
     
     if (eth_header->type <= 1500) {
         fprintf(stderr, "Skipping IEEE 802.3 frame (unsupported).\n");
+		fflush(stderr);
 		free(eth_header);
 		free(ether_node);
         return NULL;
     }
-
-	int skip_packet = 0; // do not skip
 
 	if (eth_header->type == ETHER_TYPE_IPV4) {
 		ether_node->next = parse_ipv4_packet((stream + payload_off));
@@ -66,16 +58,6 @@ ProtocolNode_t* parse_ether_packet(const uint8_t* stream, size_t len) {
 		RawPacketStream_t raw_stream = { .stream = stream + payload_off, .length = len };
 		ether_node->next = parse_ipv6_packet(&raw_stream);
 	}
-	else {
-        fprintf(stderr, "Skipping EtherType '%d'.\n", eth_header->type);
-		skip_packet = 1; // skip this unsurpported packet
-	}
-
-	if (ether_node->next == NULL || skip_packet == 1) {
-		free(ether_node);
-		free(eth_header);
-		return NULL;
-	}
 
 	return ether_node;
 }
@@ -85,6 +67,7 @@ static int parse_vlan_tags(EtherHeader_t* eth_header, const uint8_t* stream, siz
 
 	// first parse the ether type
 	eth_header->type = (stream[12] << 8) | stream[13];
+	eth_header->vlan_count = 0;
 
 	while (eth_header->type == ETHER_TYPE_VLAN) {
 		if (eth_header->vlan_count >= MAX_VLAN_STACK) {

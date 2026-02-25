@@ -20,11 +20,10 @@ ProtocolNode_t* parse_arp_packet(const uint8_t* stream) {
     memcpy(arp_hdr->tha, stream + 18, 6);  // Target MAC
     memcpy(arp_hdr->tpa, stream + 24, 4);  // Target IP
 
-	ProtocolNode_t* arp_node = malloc(sizeof(ProtocolNode_t));
+	ProtocolNode_t* arp_node = create_proto_node();
 	arp_node->type = PROTO_ARP;
 	arp_node->hdr = arp_hdr;
 	arp_node->hdr_len = arp_header_size;
-	arp_node->next = NULL;
 
 	return arp_node;
 }

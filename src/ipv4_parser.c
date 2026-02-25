@@ -32,10 +32,9 @@ ProtocolNode_t* parse_ipv4_packet(const uint8_t* stream) {
 
 	uint8_t ihl = ip_header->ver_ihl & 0x0F;
 	
-	ProtocolNode_t* ip_node = malloc(sizeof(ProtocolNode_t));
+	ProtocolNode_t* ip_node = create_proto_node();
 	ip_node->type = PROTO_IPV4;
 	ip_node->hdr = ip_header;
-	ip_node->next = NULL;
 
 	int skip_proto = 0; // do not skip the protocol
 
@@ -46,17 +45,6 @@ ProtocolNode_t* parse_ipv4_packet(const uint8_t* stream) {
 	else if (ip_header->proto == IPPROTO_UDP) {
         const uint8_t* udp_stream = stream + UDP_HEADER_LEN;
 		ip_node->next = parse_udp_packet(udp_stream);
-	}
-	else {
-		fprintf(stderr, "Skipping IPPROTO '%d'.\n", ip_header->proto);
-		ip_node->next = NULL;
-		skip_proto = 1; // skip the protocol
-	}
-
-	if (ip_node->next == NULL || skip_proto == 1) {
-		free(ip_node);
-		free(ip_header);
-		return NULL;
 	}
 	return ip_node;
 }

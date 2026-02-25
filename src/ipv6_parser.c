@@ -46,10 +46,9 @@ ProtocolNode_t* parse_ipv6_packet(const RawPacketStream_t* stream) {
 	memcpy(ip_hdr->src, raw + 8, IPV6_ADDR_LEN);
 	memcpy(ip_hdr->dst, raw + 24, IPV6_ADDR_LEN);
 	
-	ProtocolNode_t* ip_node = malloc(sizeof(ProtocolNode_t));
+	ProtocolNode_t* ip_node = create_proto_node();
 	ip_node->type = PROTO_IPV6;
 	ip_node->hdr = ip_hdr;
-	ip_node->next = NULL;
 
 	size_t offset = IPV6_HEADER_LEN;
 	uint8_t next = ip_hdr->next_hdr;
@@ -71,16 +70,6 @@ ProtocolNode_t* parse_ipv6_packet(const RawPacketStream_t* stream) {
 	}
 	else if (next == IPPROTO_UDP) {
 		ip_node->next = parse_udp_packet(next_lyr_stream);
-	}
-	else {
-		fprintf(stderr, "Skipping IPPROTO '%d'.\n", next);
-		skip_proto = 1; // skip the proto
-	}
-
-	if (ip_node->next == NULL || skip_proto == 1) {
-		free(ip_node);
-		free(ip_hdr);
-		return NULL;
 	}
 
 	return ip_node;

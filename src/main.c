@@ -6,6 +6,7 @@
 #include "hex.h"
 #include "ether_parser.h"
 #include "ipv4_parser.h"
+#include "ipv6_parser.h"
 #include "tcp_parser.h"
 #include "udp_parser.h"
 #include "arp_parser.h"
@@ -28,7 +29,7 @@ static void dump_vlan_tags(const VlanTag_t* tags, int count) {
 
 static void dump_ether_header(const EtherHeader_t* header) {
     if (header == NULL) {
-        printf("NULL\n");
+        printf("ETHER NULL\n");
         return;
     }
 
@@ -45,9 +46,27 @@ static void dump_ether_header(const EtherHeader_t* header) {
 	}
 }
 
+static void dump_ipv6_header(const IPV6Header_t* header) {
+	if (header == NULL) {
+        printf("IPv6 NULL\n");
+        return;
+	}
+
+	printf("  IPv6(FROM %d.%d.%d.%d TO %d.%d.%d.%d)\n", 
+			header->src[0],
+			header->src[1],
+			header->src[2],
+			header->src[3],
+			header->dst[0],
+			header->dst[1],
+			header->dst[2],
+			header->dst[3]
+	);
+}
+
 static void dump_ipv4_header(const IPV4Header_t* header) {
 	if (header == NULL) {
-        printf("NULL\n");
+        printf("IPv4 NULL\n");
         return;
 	}
 
@@ -65,7 +84,7 @@ static void dump_ipv4_header(const IPV4Header_t* header) {
 
 static void dump_arp_header(const ARPHeader_t* header) {
 	if (header == NULL) {
-        printf("NULL\n");
+        printf("ARP NULL\n");
         return;
 	}
 
@@ -97,7 +116,7 @@ static void dump_arp_header(const ARPHeader_t* header) {
 
 static void dump_tcp_header(const TCPHeader_t* header) {
 	if (header == NULL) {
-		printf("NULL\n");
+		printf("TCP NULL\n");
 		return;
 	}
 
@@ -106,7 +125,7 @@ static void dump_tcp_header(const TCPHeader_t* header) {
 
 static void dump_udp_header(const UDPHeader_t* header) {
 	if (header == NULL) {
-		printf("NULL");
+		printf("UDP NULL");
 		return;
 	}
 
@@ -121,20 +140,21 @@ static void dump_node(ProtocolNode_t* node) {
 			EtherHeader_t* eth_hdr = (EtherHeader_t*) current_node->hdr;
 			dump_ether_header(eth_hdr);
 		}
-
-		if (current_node->type == PROTO_IPV4) {
+		else if (current_node->type == PROTO_IPV4) {
 			IPV4Header_t* ip_hdr = (IPV4Header_t*) current_node->hdr;
 			dump_ipv4_header(ip_hdr);
 		}
-
-		if (current_node->type == PROTO_TCP) {
+		else if (current_node->type == PROTO_TCP) {
 			TCPHeader_t* tcp_hdr = (TCPHeader_t*) current_node->hdr;
 			dump_tcp_header(tcp_hdr);
 		}
-
-		if (current_node->type == PROTO_UDP) {
+		else if (current_node->type == PROTO_UDP) {
 			UDPHeader_t* udp_hdr = (UDPHeader_t*) current_node->hdr;
 			dump_udp_header(udp_hdr);
+		}
+		else if (current_node->type == PROTO_IPV6) {
+			IPV6Header_t* ipv6 = (IPV6Header_t*) current_node->hdr;
+			dump_ipv6_header(ipv6);
 		}
 
 		current_node = current_node->next;

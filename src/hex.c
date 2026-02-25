@@ -48,7 +48,9 @@ void free_packet(ProtocolNode_t* head) {
 
     while (current != NULL) {
         ProtocolNode_t* next_node = current->next;
-        if (current->hdr != NULL) { free(current->hdr); }
+        if (current->hdr != NULL) { 
+			free(current->hdr);
+		}
 
         free(current);
         current = next_node;
