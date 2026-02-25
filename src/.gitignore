@@ -1,6 +1,0 @@
-build/
-*.so
-*.a
-bin/
-*.s
-*.S

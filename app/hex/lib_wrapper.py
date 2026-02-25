@@ -14,7 +14,7 @@ class HexInstance(ctypes.Structure):
     ]
 
 
-lib_hexp = ctypes.CDLL("../lib/libhexp.so")
+lib_hexp = ctypes.CDLL("/usr/local/lib/HexParticle/libhexp.so")
 
 '''
 These functions are for capturing and managing packets
