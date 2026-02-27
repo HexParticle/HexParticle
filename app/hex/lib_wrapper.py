@@ -62,7 +62,8 @@ class PacketWrapper:
         protocols.ProtocolType.ARP:     protocols.ARPHeader,
         protocols.ProtocolType.TCP:     protocols.TCPHeader,
         protocols.ProtocolType.UDP:     protocols.UDPHeader,
-        protocols.ProtocolType.IPV6:	protocols.IPV6Header
+        protocols.ProtocolType.IPV6:	protocols.IPV6Header,
+        protocols.ProtocolType.ICMP:	protocols.ICMPHeader
     }
     
     def __init__(self, head_node_ptr):

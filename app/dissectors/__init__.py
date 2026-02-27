@@ -8,6 +8,7 @@ from .arp import ARPDissectorComponent
 from .ethernet import EthernetDissectorComponent
 from .udp import UDPDissectorComponent
 from .ipv6 import IPV6DissectorComponent
+from .icmp import ICMPDissectorComponent
 
 __all__ = [
 	'HexViewer', 
@@ -16,5 +17,6 @@ __all__ = [
 	'IPV6DissectorComponent', 
 	'ARPDissectorComponent',
 	'EthernetDissectorComponent',
-	'UDPDissectorComponent'
+	'UDPDissectorComponent',
+	'ICMPDissectorComponent'
 ]

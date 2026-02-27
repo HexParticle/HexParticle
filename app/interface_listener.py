@@ -142,7 +142,7 @@ class InterfaceListener(QWidget):
 
         length = ethernet.len
         
-        protocol_str = protos.get_protocol_name(ipv4.proto)
+        protocol_str = "Unknown IP Protocol"
         info = f"TTL: {ipv4.ttl}, ID: {ipv4.id}"
         
         if len(pwrapper.layers) > 2:
@@ -153,6 +153,9 @@ class InterfaceListener(QWidget):
             elif isinstance(next_layer, protos.UDPHeader):
                 protocol_str = "UDP"
                 info = f"Port: {next_layer.sport} -> {next_layer.dport}"
+            elif isinstance(next_layer, protos.ICMPHeader):
+                protocol_str = "ICMP"
+                info = f"Internet Control Message Protocol"
 
         self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
 
