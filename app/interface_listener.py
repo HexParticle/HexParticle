@@ -9,7 +9,7 @@ import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
 from hex.lib_wrapper import HexParticle, PacketWrapper
-from hex import protocols as protos
+from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
 
@@ -125,20 +125,42 @@ class InterfaceListener(QWidget):
             
             if isinstance(next_layer, protos.IPV4Header):
                 self.handle_ipv4_packet(pwrapper)
+            elif isinstance(next_layer, protos.IPV6Header):
+                self.handle_ipv6_packet(pwrapper)
             elif isinstance(next_layer, protos.ARPHeader):
                 self.handle_arp_packet(pwrapper)
 
+
+    def handle_ipv6_packet(self, pwrapper):
+        ethernet = pwrapper.layers[0] # Ethernet
+        ipv6 = pwrapper.layers[1] # IPV4 follows Ethernet
+
+        src_ip = ipv6_to_str(ipv6.src)
+        dst_ip = ipv6_to_str(ipv6.dst)
+
+        length = ethernet.len
         
-    def fmt_ip(self, ip_array):
-        return ".".join(map(str, ip_array))
+        protocol_str = "Unknown IP Protocol"
+        info = f"IPv6"
+        
+        if len(pwrapper.layers) > 2:
+            next_layer = pwrapper.layers[2]
+            if isinstance(next_layer, protos.TCPHeader):
+                protocol_str = "TCP"
+            elif isinstance(next_layer, protos.UDPHeader):
+                protocol_str = "UDP"
+            elif isinstance(next_layer, protos.IPV6ExtHeader):
+                protocol_str = "Extension header"
+
+        self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
 
 
     def handle_ipv4_packet(self, pwrapper):
         ethernet = pwrapper.layers[0] # Ethernet
         ipv4 = pwrapper.layers[1] # IPV4 follows Ethernet
 
-        src_ip = self.fmt_ip(ipv4.src)
-        dst_ip = self.fmt_ip(ipv4.dst)
+        src_ip = ip_to_str(ipv4.src)
+        dst_ip = ip_to_str(ipv4.dst)
 
         length = ethernet.len
         
@@ -168,9 +190,9 @@ class InterfaceListener(QWidget):
         ethernet = pwrapper.layers[0] # Ethernet
         arp = pwrapper.layers[1] # ARP follows Ethernet
         
-        src_ip = self.fmt_ip(arp.spa)
-        dst_ip = self.fmt_ip(arp.tpa)
-        src_mac = self.fmt_mac(arp.sha)
+        src_ip = ip_to_str(arp.spa)
+        dst_ip = ip_to_str(arp.tpa)
+        src_mac = mac_to_str(arp.sha)
         
         protocol_str = "ARP"
         length = ethernet.len

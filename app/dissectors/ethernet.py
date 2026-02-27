@@ -7,7 +7,7 @@ from hex import protocols as protos, mac_to_str
 
 class EthernetDissectorComponent:
     @staticmethod
-    def dissect(parent_node, ether_header):
+    def dissect(parent_node, ether_header, _previous_node = None):
         ether_item = widgets.QTreeWidgetItem(parent_node, ["Ethernet II"])
 
         proto_name = protos.ETHER_TYPE_NAMES.get(ether_header.type)
@@ -19,6 +19,8 @@ class EthernetDissectorComponent:
 
         if ether_header.vlan_count > 0:
             EthernetDissectorComponent.dissect_vlan_tags(parent_node, ether_header)
+
+        return ether_item
 
     @staticmethod
     def dissect_vlan_tags(parent_node, ether_header):
@@ -33,3 +35,5 @@ class EthernetDissectorComponent:
             widgets.QTreeWidgetItem(vlan_item, ["VLAN ID", vlan_id])
             widgets.QTreeWidgetItem(vlan_item, ["Priority Code Point", vlan_pri])
             widgets.QTreeWidgetItem(vlan_item, ["Drop Eligible Indicator", vlan_dei])
+
+        return vlan_item

@@ -7,7 +7,7 @@ from hex import protocols as protos, icmp
 
 class ICMPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, icmp_header):
+    def dissect(parent_node, icmp_header, previous_node = None):
         """Adds ICMP details to the tree."""
         icmp_item = widgets.QTreeWidgetItem(parent_node, [f"Internet Control Message Protocol"])
 
@@ -21,3 +21,5 @@ class ICMPDissectorComponent:
 
         widgets.QTreeWidgetItem(icmp_item, ["Checksum", str(icmp_header.cksum)])
         icmp_item.setExpanded(True)
+
+        return icmp_item

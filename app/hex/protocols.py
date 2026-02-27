@@ -32,13 +32,14 @@ def get_protocol_name(proto_number: int) -> str:
     return ip.IP_PROTOCOL_NAMES.get(proto_number, "Unknown Protocol")
 
 class ProtocolType:
-    ETH		= 0
-    IPV4 	= 1
-    IPV6 	= 2
-    ARP 	= 3
-    TCP 	= 4
-    UDP 	= 5,
-    ICMP 	= 6
+    ETH			= 0
+    IPV4 		= 1
+    IPV6 		= 2
+    ARP 		= 3
+    TCP 		= 4
+    UDP 		= 5,
+    ICMP 		= 6,
+    IPV6_EXT	= 7
 
 
 # Protocol specific constants
@@ -103,6 +104,14 @@ class IPV4Header(ctypes.Structure):
         ('src', 		CT_IPV4_ADDRESS),       # Source IP
         ('dst', 		CT_IPV4_ADDRESS)        # Destination IP
     ]
+
+
+class IPV6ExtHeader(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ('next_hdr', 	ctypes.c_uint8),
+        ('hdr_ext_len', ctypes.c_uint8)
+	]
 
 
 class IPV6Header(ctypes.Structure):

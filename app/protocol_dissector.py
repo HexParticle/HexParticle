@@ -6,6 +6,8 @@ import dissectors
 
 from PyQt6.QtWidgets import QTreeWidget, QVBoxLayout, QWidget
 
+import typing
+
 class ProtocolDissector(QWidget):
     def __init__(self):
         super().__init__()
@@ -16,13 +18,14 @@ class ProtocolDissector(QWidget):
         self.layout.addWidget(self.tree)
 
         self.dissection_handlers = {
-            protos.TCPHeader: 	dissectors.TCPDissectorComponent.dissect,
-            protos.IPV4Header: 	dissectors.IPV4DissectorComponent.dissect,
-            protos.ARPHeader: 	dissectors.ARPDissectorComponent.dissect,
-            protos.EtherHeader: dissectors.EthernetDissectorComponent.dissect,
-            protos.UDPHeader: 	dissectors.UDPDissectorComponent.dissect,
-            protos.IPV6Header:	dissectors.IPV6DissectorComponent.dissect,
-            protos.ICMPHeader:	dissectors.ICMPDissectorComponent.dissect
+            protos.TCPHeader: 		dissectors.TCPDissectorComponent.dissect,
+            protos.IPV4Header: 		dissectors.IPV4DissectorComponent.dissect,
+            protos.ARPHeader: 		dissectors.ARPDissectorComponent.dissect,
+            protos.EtherHeader: 	dissectors.EthernetDissectorComponent.dissect,
+            protos.UDPHeader: 		dissectors.UDPDissectorComponent.dissect,
+            protos.IPV6Header:		dissectors.IPV6DissectorComponent.dissect,
+            protos.ICMPHeader:		dissectors.ICMPDissectorComponent.dissect,
+            protos.IPV6ExtHeader:	dissectors.IPV6DissectorComponent.dissect
         }
 
 
@@ -32,8 +35,9 @@ class ProtocolDissector(QWidget):
         parsed from ProtocolNode_t) and populates the tree.
         """
         self.tree.clear()
-        
+        previous_node = None
+         
         for layer in pwrapper.layers:
-            dissec_handler = self.dissection_handlers.get(type(layer))
+            dissec_handler: typing.Callable = self.dissection_handlers.get(type(layer))
             if dissec_handler:
-                dissec_handler(self.tree, layer)
+                previous_node = dissec_handler(self.tree, layer, previous_node)

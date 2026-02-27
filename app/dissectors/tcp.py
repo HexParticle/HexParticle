@@ -10,7 +10,7 @@ class TCPDissectorComponent:
     }
 
     @staticmethod
-    def dissect(parent_node, tcp_header):
+    def dissect(parent_node, tcp_header, _previous_node = None):
         """Adds TCP details to the tree."""
         tcp_item = widgets.QTreeWidgetItem(parent_node, ["Transmission Control Protocol"])
         
@@ -30,3 +30,4 @@ class TCPDissectorComponent:
             widgets.QTreeWidgetItem(flag_node, [f"... {name}", state])
             
         tcp_item.setExpanded(True)
+        return tcp_item

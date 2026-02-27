@@ -57,13 +57,14 @@ class InterfaceManager:
 
 class PacketWrapper:
     TYPE_MAP = {
-        protocols.ProtocolType.ETH:     protocols.EtherHeader,
-        protocols.ProtocolType.IPV4:    protocols.IPV4Header,
-        protocols.ProtocolType.ARP:     protocols.ARPHeader,
-        protocols.ProtocolType.TCP:     protocols.TCPHeader,
-        protocols.ProtocolType.UDP:     protocols.UDPHeader,
-        protocols.ProtocolType.IPV6:	protocols.IPV6Header,
-        protocols.ProtocolType.ICMP:	protocols.ICMPHeader
+        protocols.ProtocolType.ETH:     	protocols.EtherHeader,
+        protocols.ProtocolType.IPV4:    	protocols.IPV4Header,
+        protocols.ProtocolType.ARP:     	protocols.ARPHeader,
+        protocols.ProtocolType.TCP:     	protocols.TCPHeader,
+        protocols.ProtocolType.UDP:     	protocols.UDPHeader,
+        protocols.ProtocolType.IPV6:		protocols.IPV6Header,
+        protocols.ProtocolType.ICMP:		protocols.ICMPHeader,
+        protocols.ProtocolType.IPV6_EXT: 	protocols.IPV6ExtHeader
     }
     
     def __init__(self, head_node_ptr):

@@ -7,7 +7,7 @@ from hex import protocols as protos
 
 class ARPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, arp_header):
+    def dissect(parent_node, arp_header, _previous_node = None):
         """Adds ARP details to the tree."""
         arp_type = "Reply" if arp_header.op == protos.ARP_RESPONSE else "Request"
         arp_item = widgets.QTreeWidgetItem(parent_node, [f"Address Resolution Protocol ({arp_type})"])
@@ -23,7 +23,9 @@ class ARPDissectorComponent:
         widgets.QTreeWidgetItem(arp_item, ["Sender Protocol Address", ARPDissectorComponent.to_ip_str(arp_header.spa)])
         widgets.QTreeWidgetItem(arp_item, ["Target MAC Address", ARPDissectorComponent.to_mac_str(arp_header.tha)])
         widgets.QTreeWidgetItem(arp_item, ["Target Protocol Address", ARPDissectorComponent.to_ip_str(arp_header.tpa)])
+
         arp_item.setExpanded(True)
+        return arp_item
 
 
     def to_mac_str(bytes):

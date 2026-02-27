@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 import typing
+import ipaddress
 
 def mac_to_str(bytes: bytearray) -> str:
 	if len(bytes) != 6:
@@ -14,3 +15,9 @@ def ip_to_str(octets: typing.List[int]) -> str:
 		raise ValueError("length must be 4")
 
 	return ".".join(map(str, octets))
+
+def ipv6_to_str(octets) -> str:
+	if len(octets) != 16:
+		raise ValueError("length must be 16")
+
+	return str(ipaddress.IPv6Address(bytes(octets)))

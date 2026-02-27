@@ -7,7 +7,7 @@ from hex import protocols as protos, mac_to_str
 
 class UDPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, udp_header):
+    def dissect(parent_node, udp_header, _previous_node = None):
         udp_item = widgets.QTreeWidgetItem(parent_node, ["User Datagram Protocol"])
         widgets.QTreeWidgetItem(udp_item, ["Source Port", str(udp_header.sport)])
 
@@ -16,4 +16,6 @@ class UDPDissectorComponent:
 
         widgets.QTreeWidgetItem(udp_item, ["Length", f"{udp_header.length} bytes"])
         widgets.QTreeWidgetItem(udp_item, ["Checksum", f"0x{udp_header.cksum:04x}"])
+
         udp_item.setExpanded(True)
+        return udp_item
