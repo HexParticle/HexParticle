@@ -7,7 +7,7 @@ from .ipv4 import IPV4DissectorComponent
 from .arp import ARPDissectorComponent
 from .ethernet import EthernetDissectorComponent
 from .udp import UDPDissectorComponent
-from .ipv6 import IPV6DissectorComponent
+from .ipv6 import IPV6DissectorComponent, IPV6ExtDissectorComponent
 from .icmp import ICMPDissectorComponent
 
 __all__ = [
@@ -18,5 +18,6 @@ __all__ = [
 	'ARPDissectorComponent',
 	'EthernetDissectorComponent',
 	'UDPDissectorComponent',
-	'ICMPDissectorComponent'
+	'ICMPDissectorComponent',
+	'IPV6ExtDissectorComponent'
 ]

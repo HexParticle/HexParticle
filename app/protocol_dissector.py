@@ -25,7 +25,7 @@ class ProtocolDissector(QWidget):
             protos.UDPHeader: 		dissectors.UDPDissectorComponent.dissect,
             protos.IPV6Header:		dissectors.IPV6DissectorComponent.dissect,
             protos.ICMPHeader:		dissectors.ICMPDissectorComponent.dissect,
-            protos.IPV6ExtHeader:	dissectors.IPV6DissectorComponent.dissect
+            protos.IPV6ExtHeader:	dissectors.IPV6ExtDissectorComponent.dissect
         }
 
 

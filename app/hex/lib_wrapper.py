@@ -75,6 +75,9 @@ class PacketWrapper:
         
         while current:
             node = current.contents
+            if node.type == protocols.ProtocolType.IPV6_EXT:
+                print("ext header")
+
             header_obj = self._cast_header(node)
             
             if header_obj is not None:
