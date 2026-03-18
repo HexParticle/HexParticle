@@ -70,7 +70,7 @@ class InterfaceListener(QWidget):
             ["Source", "Destination", "Protocol", "Length", "Info"]
         )
         self.packet_table.horizontalHeader().setStretchLastSection(True)
-        self.packet_table.setAlternatingRowColors(True)
+        # self.packet_table.setAlternatingRowColors(True)
 
         self.packet_table.itemClicked.connect(self.on_row_selected)
 

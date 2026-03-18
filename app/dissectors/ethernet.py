@@ -31,9 +31,9 @@ class EthernetDissectorComponent:
             vlan_pri = (vlan_tag.tci >> 13) & 0x07
             vlan_dei = (vlan_tag.tci >> 12) & 0x01
 
-            widgets.QTreeWidgetItem(vlan_item, ["Tag Protocol ID", vlan_tag.tpid])
-            widgets.QTreeWidgetItem(vlan_item, ["VLAN ID", vlan_id])
-            widgets.QTreeWidgetItem(vlan_item, ["Priority Code Point", vlan_pri])
-            widgets.QTreeWidgetItem(vlan_item, ["Drop Eligible Indicator", vlan_dei])
+            widgets.QTreeWidgetItem(vlan_item, ["Tag Protocol ID", str(vlan_tag.tpid)])
+            widgets.QTreeWidgetItem(vlan_item, ["VLAN ID", str(vlan_id)])
+            widgets.QTreeWidgetItem(vlan_item, ["Priority Code Point", str(vlan_pri)])
+            widgets.QTreeWidgetItem(vlan_item, ["Drop Eligible Indicator", str(vlan_dei)])
 
         return vlan_item
