@@ -3,6 +3,7 @@
 
 import ctypes
 import typing
+from dataclasses import dataclass
 
 from . import protocols
 # import protocols
@@ -15,6 +16,8 @@ class HexInstance(ctypes.Structure):
 
 
 lib_hexp = ctypes.CDLL("/usr/local/lib/HexParticle/libhexp.so")
+if lib_hexp is None:
+    raise RuntimeError("libhexp not found")
 
 '''
 These functions are for capturing and managing packets
@@ -57,14 +60,16 @@ class InterfaceManager:
 
 class PacketWrapper:
     TYPE_MAP = {
-        protocols.ProtocolType.ETH:     	protocols.EtherHeader,
-        protocols.ProtocolType.IPV4:    	protocols.IPV4Header,
-        protocols.ProtocolType.ARP:     	protocols.ARPHeader,
-        protocols.ProtocolType.TCP:     	protocols.TCPHeader,
-        protocols.ProtocolType.UDP:     	protocols.UDPHeader,
-        protocols.ProtocolType.IPV6:		protocols.IPV6Header,
-        protocols.ProtocolType.ICMP:		protocols.ICMPHeader,
-        protocols.ProtocolType.IPV6_EXT: 	protocols.IPV6ExtHeader
+        protocols.ProtocolType.ETH:     	  protocols.EtherHeader,
+        protocols.ProtocolType.IPV4:    	  protocols.IPV4Header,
+        protocols.ProtocolType.ARP:     	  protocols.ARPHeader,
+        protocols.ProtocolType.TCP:     	  protocols.TCPHeader,
+        protocols.ProtocolType.UDP:     	  protocols.UDPHeader,
+        protocols.ProtocolType.IPV6:		  protocols.IPV6Header,
+        protocols.ProtocolType.ICMP:		  protocols.ICMPHeader,
+        protocols.ProtocolType.IPV6_EXT_FRAG: 		protocols.IPv6ExtFragHeader,
+        protocols.ProtocolType.IPV6_EXT_DST_OPTS: 	protocols.IPv6ExtOptsHeader,
+        protocols.ProtocolType.IPV6_EXT_HOP_BY_HOP: protocols.IPv6ExtRoutingHeader,
     }
     
     def __init__(self, head_node_ptr):
@@ -106,6 +111,11 @@ class PacketWrapper:
         return " -> ".join([type(l).__name__ for l in self.layers])
 
 
+@dataclass
+class IPFragment:
+    id: int
+
+
 class HexParticle():
     """
     A high-level packet sniffing interface for the HexParticle C library.
@@ -122,7 +132,7 @@ class HexParticle():
         if not self.handle:
             raise RuntimeError(f"Failed to open device {device}")
         
-        self._callbacks: typing.Dict[int, typing.List[typing.Callable[[dict], None]]] = {}
+        self.__fragments: typing.Dict = {}
 
 
     def next_packet(self) -> PacketWrapper:
@@ -131,11 +141,9 @@ class HexParticle():
             return None
     
         try:
-            # Build the wrapper while the C memory is guaranteed to be locked
             pwrapper = PacketWrapper(node_ptr)
             return pwrapper
         finally:
-            # Use the pointer directly to ensure we are freeing exactly what we got
             lib_hexp.free_packet(node_ptr)
 
 
