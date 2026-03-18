@@ -37,9 +37,14 @@ class ProtocolType:
     IPV6 		= 2
     ARP 		= 3
     TCP 		= 4
-    UDP 		= 5,
-    ICMP 		= 6,
+    UDP 		= 5
+    ICMP 		= 6
     IPV6_EXT	= 7
+    IPV6_EXT_HOP_BY_HOP = 8
+    IPV6_EXT_DST_OPTS   = 9
+    IPV6_EXT_FRAG       = 10
+    ICMPV6              = 11
+    RAW                 = 12
 
 
 # Protocol specific constants
@@ -111,7 +116,38 @@ class IPV6ExtHeader(ctypes.Structure):
     _fields_ = [
         ('next_hdr', 	ctypes.c_uint8),
         ('hdr_ext_len', ctypes.c_uint8)
-	]
+    ]
+
+
+class IPv6ExtFragHeader(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("next_hdr",        ctypes.c_uint8),
+        ("reserved",        ctypes.c_uint8),
+        ("frag_offset_m",   ctypes.c_uint16),
+        ("identification",  ctypes.c_uint32),
+    ]
+
+
+class IPv6ExtOptsHeader(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("next_hdr",    ctypes.c_uint8),
+        ("hdr_ext_len", ctypes.c_uint8),
+        # 'options' is a flexible array member. 
+        # We don't define it in _fields_ because its size is dynamic.
+    ]
+
+
+class IPv6ExtRoutingHeader(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("next_hdr",        ctypes.c_uint8),
+        ("hdr_ext_len",     ctypes.c_uint8),
+        ("routing_type",    ctypes.c_uint8),
+        ("segments_left",   ctypes.c_uint8),
+        # 'data' is a flexible array member.
+    ]
 
 
 class IPV6Header(ctypes.Structure):
