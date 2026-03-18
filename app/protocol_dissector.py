@@ -12,42 +12,24 @@ import PyQt6.QtWidgets as widgets
 
 # stdlib
 import typing
-    
-
-# reassembling UDP segments
-__udp_segments: typing.Dict[FragmentKey, typing.List] = {}
-
-# reassembling TCP segments
-__tcp_segments: typing.Dict[FragmentKey, typing.List] = {}
-
-
-def generate_tcp_stream_key(ip_packet, tcp_packet):
-    return generate_stream_key(
-       ip_packet.src,
-       ip_packet.dst,
-       tcp_packet.sport,
-       tcp_packet.dport
-    )
-
-
-def __add_new_tcp_segment(seg_key, value):
-    session = __tcp_segments.get(seg_key)
-    if session:
-        session.append(value)
-    else:
-        __tcp_segments[seg_key] = [value]
 
 
 class ProtocolDissector(widgets.QWidget):
     def __init__(self):
         super().__init__()
+
+
+        # reassembling UDP segments
+        self.__udp_segments: typing.Dict[FragmentKey, typing.List] = {}
+
+        # reassembling TCP segments
+        self.__tcp_segments: typing.Dict[FragmentKey, typing.List] = {}
+
         self.layout = widgets.QVBoxLayout(self)
         
-        # Tracking the key for the currently displayed packet
         self.current_session_key = None
         self.session_windows = [] # Keep references so windows don't close immediately
 
-        # Header / Action Bar
         self.button_layout = widgets.QHBoxLayout()
         self.session_btn = widgets.QPushButton("Follow TCP Stream")
         self.session_btn.setEnabled(False) # Disabled until a TCP packet is clicked
@@ -69,8 +51,26 @@ class ProtocolDissector(widgets.QWidget):
             protos.UDPHeader:       dissectors.UDPDissectorComponent.dissect,
             protos.IPV6Header:      dissectors.IPV6ExtDissectorComponent.dissect,
             protos.ICMPHeader:      dissectors.ICMPDissectorComponent.dissect,
-            protos.IPV6ExtHeader:   dissectors.IPV6ExtDissectorComponent.dissect
+            # protos.IPV6ExtHeader:   dissectors.IPV6ExtDissectorComponent.dissect
         }
+
+
+    def add_new_tcp_segment(self, seg_key, value):
+        session = self.__tcp_segments.get(seg_key)
+        if session:
+            session.append(value)
+        else:
+            self.__tcp_segments[seg_key] = [value]
+
+
+    def generate_tcp_stream_key(self, ip_packet, tcp_packet):
+        return generate_stream_key(
+            ip_packet.src,
+            tcp_packet.sport,
+            ip_packet.dst,
+            tcp_packet.dport
+        )
+
 
     def display_packet(self, pwrapper):
         self.tree.clear()
@@ -81,17 +81,14 @@ class ProtocolDissector(widgets.QWidget):
         __layer_ip_packet = None
          
         for layer in pwrapper.layers:
-            if isinstance(layer, protos.IPV4Header):
+            if isinstance(layer, protos.IPV4Header) or isinstance(layer, protos.IPV6Header):
                 __layer_ip_packet = layer
 
             if isinstance(layer, protos.TCPHeader):
-                # Calculate the key for this specific packet
-                self.current_session_key = generate_tcp_stream_key(__layer_ip_packet, layer)
+                self.current_session_key = self.generate_tcp_stream_key(__layer_ip_packet, layer)
                 
-                # Update our global reassembly dict
-                __add_new_tcp_segment(self.current_session_key, layer)
+                self.add_new_tcp_segment(self.current_session_key, layer)
 
-                # Enable button only if we have a valid TCP session
                 self.session_btn.setEnabled(True)
 
             dissec_handler = self.dissection_handlers.get(type(layer))
@@ -100,13 +97,11 @@ class ProtocolDissector(widgets.QWidget):
 
     def on_session_button_clicked(self):
         """Triggered when user wants to see the full list of segments for the current flow."""
-        if self.current_session_key and self.current_session_key in __tcp_segments:
-            session_data = __tcp_segments[self.current_session_key]
+        if self.current_session_key and self.current_session_key in self.__tcp_segments:
+            session_data = self.__tcp_segments[self.current_session_key]
             self.display_tcp_session_window(session_data)
 
     def display_tcp_session_window(self, session: typing.List[protos.TCPHeader]):
-        # We store the window in a list to prevent Python's garbage collector 
-        # from destroying it as soon as the function ends.
         window = dissectors.TCPSessionAssemblyWindow(session)
         self.session_windows.append(window)
         window.show()

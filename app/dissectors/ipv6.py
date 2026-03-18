@@ -33,7 +33,7 @@ class IPV6ExtDissectorComponent:
     @staticmethod
     def dissect(parent_node, ext_header, previous_node = None):
         next_hdr = ip.IP_PROTOCOL_NAMES.get(ext_header.next_hdr)
-        ext_item = widgets.QTreeWidgetItem(parent_node, next_hdr)
+        ext_item = widgets.QTreeWidgetItem(parent_node, ["Next Header", str(next_hdr)])
         ext_item.setExpanded(False)
 
         return ext_item

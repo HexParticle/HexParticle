@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 import PyQt6.QtWidgets as widgets
-import PyQt6.QtCore
+from PyQt6 import QtCore
 
 # hexp
 from hex.protocols import TCPHeader
