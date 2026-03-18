@@ -9,3 +9,4 @@ pyvenv.cfg
 **/.DS_Store
 main
 main.dSYM
+.venv

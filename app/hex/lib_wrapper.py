@@ -67,9 +67,9 @@ class PacketWrapper:
         protocols.ProtocolType.UDP:     	  protocols.UDPHeader,
         protocols.ProtocolType.IPV6:		  protocols.IPV6Header,
         protocols.ProtocolType.ICMP:		  protocols.ICMPHeader,
-        protocols.ProtocolType.IPV6_EXT_FRAG: 		protocols.IPv6ExtFragHeader,
-        protocols.ProtocolType.IPV6_EXT_DST_OPTS: 	protocols.IPv6ExtOptsHeader,
-        protocols.ProtocolType.IPV6_EXT_HOP_BY_HOP: protocols.IPv6ExtRoutingHeader,
+        # protocols.ProtocolType.IPV6_EXT_FRAG: 		protocols.IPv6ExtFragHeader,
+        # protocols.ProtocolType.IPV6_EXT_DST_OPTS: 	protocols.IPv6ExtOptsHeader,
+        # protocols.ProtocolType.IPV6_EXT_HOP_BY_HOP: protocols.IPv6ExtRoutingHeader,
     }
     
     def __init__(self, head_node_ptr):
@@ -144,7 +144,8 @@ class HexParticle():
             pwrapper = PacketWrapper(node_ptr)
             return pwrapper
         finally:
-            lib_hexp.free_packet(node_ptr)
+            # lib_hexp.free_packet(node_ptr)
+            pass
 
 
     def close(self):

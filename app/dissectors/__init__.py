@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 from .hex_viewer import HexViewer
-from .tcp import TCPDissectorComponent
+from .tcp import TCPDissectorComponent, TCPSessionAssemblyWindow
 from .ipv4 import IPV4DissectorComponent
 from .arp import ARPDissectorComponent
 from .ethernet import EthernetDissectorComponent
@@ -19,5 +19,6 @@ __all__ = [
 	'EthernetDissectorComponent',
 	'UDPDissectorComponent',
 	'ICMPDissectorComponent',
-	'IPV6ExtDissectorComponent'
+	'IPV6ExtDissectorComponent',
+	'TCPSessionAssemblyWindow'
 ]
