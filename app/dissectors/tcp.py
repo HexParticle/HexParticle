@@ -2,6 +2,12 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 import PyQt6.QtWidgets as widgets
+import PyQt6.QtCore
+
+# hexp
+from hex.protocols import TCPHeader
+
+import typing
 
 class TCPDissectorComponent:
     FLAGS = {
@@ -31,3 +37,69 @@ class TCPDissectorComponent:
             
         tcp_item.setExpanded(True)
         return tcp_item
+
+
+class TCPSessionAssemblyWindow(widgets.QWidget):
+    def __init__(self, session: typing.List[TCPHeader]):
+        super().__init__()
+        self.session = session
+        self.setWindowTitle("TCP Session Segment List")
+        self.resize(800, 400)
+
+        # Main Layout
+        layout = widgets.QVBoxLayout(self)
+
+        # Table Setup
+        self.table = widgets.QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "Source Port", "Dest Port", "Seq Number", "Ack Number", "Flags", "Win Size"
+        ])
+        
+        # Make the table look professional
+        self.table.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(widgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        self.populate_table()
+        layout.addWidget(self.table)
+
+    def decode_flags(self, flags_byte: int) -> str:
+        """Converts the raw flags byte into a readable string like [SYN, ACK]."""
+        flag_map = {
+            0x01: "FIN",
+            0x02: "SYN",
+            0x04: "RST",
+            0x08: "PSH",
+            0x10: "ACK",
+            0x20: "URG"
+        }
+        active_flags = [name for bit, name in flag_map.items() if flags_byte & bit]
+        return " | ".join(active_flags) if active_flags else "None"
+
+    def populate_table(self):
+        self.table.setRowCount(len(self.session))
+        
+        for row, header in enumerate(self.session):
+            # We must use socket.ntohs/ntohl if your ctypes mapping 
+            # hasn't already handled Big-Endian to Little-Endian conversion!
+            # Assuming raw values for now:
+            
+            data = [
+                str(header.sport),
+                str(header.dport),
+                str(header.seq),
+                str(header.ack),
+                self.decode_flags(header.flags),
+                str(header.win)
+            ]
+
+            for col, value in enumerate(data):
+                item = widgets.QTableWidgetItem(value)
+                # Center align the numbers for better readability
+                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                self.table.setItem(row, col, item)
+
+            # Visual Hint: Highlight PSH packets to show "Unit" boundaries
+            if header.flags & 0x08: 
+                for col in range(6):
+                    self.table.item(row, col).setBackground(QtCore.Qt.GlobalColor.lightGray)
