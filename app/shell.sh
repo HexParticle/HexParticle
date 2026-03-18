@@ -1,3 +1,3 @@
-#!/bin/sh
+#!/bin/bash
 
-docker run -p 9000:9000 snif
+sudo $(which python3) particle_app.py
