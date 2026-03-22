@@ -9,7 +9,7 @@ import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
 from hex.lib_wrapper import HexParticle, PacketWrapper
-from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str
+from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
 
@@ -144,17 +144,8 @@ class InterfaceListener(QWidget):
 
         length = 100 # ethernet.len
         
-        protocol_str = "Unknown IP Protocol"
+        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv6.next_hdr)
         info = f"IPv6"
-        
-        if len(pwrapper.layers) > 2:
-            next_layer = pwrapper.layers[2]
-            if isinstance(next_layer, protos.TCPHeader):
-                protocol_str = "TCP"
-            elif isinstance(next_layer, protos.UDPHeader):
-                protocol_str = "UDP"
-            # elif isinstance(next_layer, protos.IPV6ExtHeader):
-                # protocol_str = "Extension header"
 
         self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
 
@@ -169,19 +160,16 @@ class InterfaceListener(QWidget):
         # dummy length
         length = 100 # ethernet.len
         
-        protocol_str = "Unknown IP Protocol"
+        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv4.proto)
         info = f"TTL: {ipv4.ttl}, ID: {ipv4.id}"
         
         if len(pwrapper.layers) > 2:
             next_layer = pwrapper.layers[2]
             if isinstance(next_layer, protos.TCPHeader):
-                protocol_str = "TCP"
                 info = f"Port: {next_layer.sport} -> {next_layer.dport} [Seq={next_layer.seq}]"
             elif isinstance(next_layer, protos.UDPHeader):
-                protocol_str = "UDP"
                 info = f"Port: {next_layer.sport} -> {next_layer.dport}"
             elif isinstance(next_layer, protos.ICMPHeader):
-                protocol_str = "ICMP"
                 info = f"Internet Control Message Protocol"
 
         self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)

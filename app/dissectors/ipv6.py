@@ -12,12 +12,15 @@ class IPV6DissectorComponent:
         tc = (ip_header.ver_tc_fl >>  20) & 0xFF
         fl = ip_header.ver_tc_fl & 0x14
 
-        ip_item = widgets.QTreeWidgetItem(parent_node, ["Internet Protocol Version 6"])
+        src_ip = ipv6_to_str(ip_header.src)
+        dst_ip = ipv6_to_str(ip_header.dst)
+
+        ip_item = widgets.QTreeWidgetItem(parent_node, [f"Internet Protocol Version 6, Src: {src_ip}, Dst: {dst_ip}"])
         next_hdr = ip.IP_PROTOCOL_NAMES.get(ip_header.next_hdr)
         next_hdr = str(ip_header.next_hdr) + (" (" + next_hdr + ")" if next_hdr else f"{ip_header.next_hdr} (Unknown next header type)")
         
-        widgets.QTreeWidgetItem(ip_item, ["Source", ipv6_to_str(ip_header.src)])
-        widgets.QTreeWidgetItem(ip_item, ["Destination", ipv6_to_str(ip_header.dst)])
+        widgets.QTreeWidgetItem(ip_item, ["Source", src_ip])
+        widgets.QTreeWidgetItem(ip_item, ["Destination", dst_ip])
         widgets.QTreeWidgetItem(ip_item, ["Version", str(ver)])
         widgets.QTreeWidgetItem(ip_item, ["Traffic Class", str(tc)])
         widgets.QTreeWidgetItem(ip_item, ["Flow Label", str(fl)])

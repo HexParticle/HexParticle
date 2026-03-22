@@ -35,6 +35,25 @@ IP_PROTOCOL_NAMES = {
     135: "Mobility Header",
 }
 
+IP_PROTOCOL_NAMES_SHORT = {
+    0: "HOPOPT",     # IPv6 Hop-by-Hop Option
+    1: "ICMP",       # Internet Control Message Protocol (v4)
+    2: "IGMP",       # Internet Group Management Protocol
+    6: "TCP",        # Transmission Control Protocol
+    17: "UDP",       # User Datagram Protocol
+    41: "IPv6",      # IPv6 encapsulation (6to4)
+    43: "IPv6-Route",# Routing Header for IPv6
+    44: "IPv6-Frag", # Fragment Header for IPv6
+    47: "GRE",       # General Routing Encapsulation
+    50: "ESP",       # Encap Security Payload
+    51: "AH",        # Authentication Header
+    58: "ICMPv6",    # ICMP for IPv6
+    59: "IPv6-NoNxt",# No Next Header for IPv6
+    60: "IPv6-Opts", # Destination Options for IPv6
+    89: "OSPF",      # OSPF Routing Protocol
+    132: "SCTP",     # Stream Control Transmission Protocol
+}
+
 '''
 Internet Protocol Version 6's source and destination addresses' length
 '''

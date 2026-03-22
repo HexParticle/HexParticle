@@ -12,8 +12,11 @@ class IPV4DissectorComponent:
         df = (flags & 0x2) >> 1 # don't fragment
         mf = flags & 0x1 # more fragments
 
+        src_ip = ".".join(map(str, ip_header.src))
+        dst_ip = ".".join(map(str, ip_header.dst))
+
         """Adds IPV4 details to the tree."""
-        ip_item = widgets.QTreeWidgetItem(parent_node, ["Internet Protocol Version 4"])
+        ip_item = widgets.QTreeWidgetItem(parent_node, [f"Internet Protocol Version 4, Src: {src_ip}, Dst: {dst_ip}"])
         widgets.QTreeWidgetItem(ip_item, ["Version/IHL", hex(ip_header.ver_ihl)])
         widgets.QTreeWidgetItem(ip_item, ["Total Length", str(ip_header.len)])
         widgets.QTreeWidgetItem(ip_item, ["Identification", hex(ip_header.id)])
@@ -30,8 +33,8 @@ class IPV4DissectorComponent:
         widgets.QTreeWidgetItem(ip_item, ['Fragment Offset', hex(offset)])
         widgets.QTreeWidgetItem(ip_item, ["TTL", str(ip_header.ttl)])
         widgets.QTreeWidgetItem(ip_item, ["Protocol", str(ip_header.proto)])
-        widgets.QTreeWidgetItem(ip_item, ["Source", ".".join(map(str, ip_header.src))])
-        widgets.QTreeWidgetItem(ip_item, ["Destination", ".".join(map(str, ip_header.dst))])
+        widgets.QTreeWidgetItem(ip_item, ["Source", src_ip])
+        widgets.QTreeWidgetItem(ip_item, ["Destination", dst_ip])
 
         ip_item.setExpanded(False)
         return ip_item
