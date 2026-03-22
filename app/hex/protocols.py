@@ -89,8 +89,7 @@ class EtherHeader(ctypes.Structure):
         ('src_mac', 	CT_MAC_ADDRESS), 
         ('dst_mac', 	CT_MAC_ADDRESS),
         ('type', 		ctypes.c_uint16),
-        ('len', 		ctypes.c_uint32),
-        ('vlan_count',	ctypes.c_int),
+        ('vlan_count',	ctypes.c_uint8),
         ('vlans',		VlanTag * MAX_VLAN_STACK)
     ]
 

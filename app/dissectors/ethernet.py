@@ -14,7 +14,7 @@ class EthernetDissectorComponent:
         widgets.QTreeWidgetItem(ether_item, ["Source Address", mac_to_str(ether_header.src_mac)])
         widgets.QTreeWidgetItem(ether_item, ["Destination Address", mac_to_str(ether_header.dst_mac)])
         widgets.QTreeWidgetItem(ether_item, ["Type", str(proto_name)])
-        widgets.QTreeWidgetItem(ether_item, ["Length", hex(ether_header.len)])
+        widgets.QTreeWidgetItem(ether_item, ["Length", hex(100)])
         ether_item.setExpanded(False)
 
         if ether_header.vlan_count > 0:

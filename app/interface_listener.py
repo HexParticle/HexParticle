@@ -51,7 +51,8 @@ class InterfaceListener(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("HexParticle Sniffer")
-        self.resize(600, 500)
+        # self.resize(600, 500)
+        self.showFullScreen()
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
         layout = QVBoxLayout(self)
@@ -120,6 +121,9 @@ class InterfaceListener(QWidget):
 
 
     def process_incoming_packet(self, pwrapper: PacketWrapper):
+        if pwrapper is None or len(pwrapper.layers) == 0:
+            return
+
         if len(pwrapper.layers) > 1:
             next_layer = pwrapper.layers[1]
             
@@ -138,7 +142,7 @@ class InterfaceListener(QWidget):
         src_ip = ipv6_to_str(ipv6.src)
         dst_ip = ipv6_to_str(ipv6.dst)
 
-        length = ethernet.len
+        length = 100 # ethernet.len
         
         protocol_str = "Unknown IP Protocol"
         info = f"IPv6"
@@ -149,8 +153,8 @@ class InterfaceListener(QWidget):
                 protocol_str = "TCP"
             elif isinstance(next_layer, protos.UDPHeader):
                 protocol_str = "UDP"
-            elif isinstance(next_layer, protos.IPV6ExtHeader):
-                protocol_str = "Extension header"
+            # elif isinstance(next_layer, protos.IPV6ExtHeader):
+                # protocol_str = "Extension header"
 
         self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
 
@@ -162,7 +166,8 @@ class InterfaceListener(QWidget):
         src_ip = ip_to_str(ipv4.src)
         dst_ip = ip_to_str(ipv4.dst)
 
-        length = ethernet.len
+        # dummy length
+        length = 100 # ethernet.len
         
         protocol_str = "Unknown IP Protocol"
         info = f"TTL: {ipv4.ttl}, ID: {ipv4.id}"
@@ -195,7 +200,7 @@ class InterfaceListener(QWidget):
         src_mac = mac_to_str(arp.sha)
         
         protocol_str = "ARP"
-        length = ethernet.len
+        length = 100 #ethernet.len
 
         info = "ARP Packet"
         
@@ -235,7 +240,7 @@ class InterfaceListener(QWidget):
             selected_packet = self.packets[row_index]
             
             self.dissector.display_packet(selected_packet)
-            self.hex_viewer.set_data(selected_packet.raw)
+            # self.hex_viewer.set_data(selected_packet.raw)
 
 
     def stop_sniffing(self):

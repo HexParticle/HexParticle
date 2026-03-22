@@ -81,7 +81,7 @@ class PacketWrapper:
         while current:
             node = current.contents
             if node.type == protocols.ProtocolType.IPV6_EXT:
-                print("ext header")
+                print("ipv6 ext header")
 
             header_obj = self._cast_header(node)
             
@@ -131,21 +131,21 @@ class HexParticle():
         self.handle: HexInstance = lib_hexp.create_hex_instance(device.encode('utf-8'))
         if not self.handle:
             raise RuntimeError(f"Failed to open device {device}")
-        
-        self.__fragments: typing.Dict = {}
 
 
     def next_packet(self) -> PacketWrapper:
         node_ptr = lib_hexp.read_next_packet(self.handle)
         if not node_ptr:
             return None
+
+        pwrapper = None
     
         try:
             pwrapper = PacketWrapper(node_ptr)
-            return pwrapper
         finally:
-            # lib_hexp.free_packet(node_ptr)
-            pass
+            lib_hexp.free_packet(node_ptr)
+
+        return pwrapper
 
 
     def close(self):
