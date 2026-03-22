@@ -44,19 +44,16 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
         super().__init__()
         self.session = session
         self.setWindowTitle("TCP Session Segment List")
-        self.resize(800, 400)
+        self.resize(500, 400)
 
-        # Main Layout
         layout = widgets.QVBoxLayout(self)
 
-        # Table Setup
         self.table = widgets.QTableWidget()
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
             "Source Port", "Dest Port", "Seq Number", "Ack Number", "Flags", "Win Size"
         ])
         
-        # Make the table look professional
         self.table.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(widgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
@@ -64,7 +61,6 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
         layout.addWidget(self.table)
 
     def decode_flags(self, flags_byte: int) -> str:
-        """Converts the raw flags byte into a readable string like [SYN, ACK]."""
         flag_map = {
             0x01: "FIN",
             0x02: "SYN",
@@ -80,10 +76,6 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
         self.table.setRowCount(len(self.session))
         
         for row, header in enumerate(self.session):
-            # We must use socket.ntohs/ntohl if your ctypes mapping 
-            # hasn't already handled Big-Endian to Little-Endian conversion!
-            # Assuming raw values for now:
-            
             data = [
                 str(header.sport),
                 str(header.dport),
@@ -95,11 +87,9 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
 
             for col, value in enumerate(data):
                 item = widgets.QTableWidgetItem(value)
-                # Center align the numbers for better readability
                 item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(row, col, item)
 
-            # Visual Hint: Highlight PSH packets to show "Unit" boundaries
             if header.flags & 0x08: 
                 for col in range(6):
                     self.table.item(row, col).setBackground(QtCore.Qt.GlobalColor.lightGray)

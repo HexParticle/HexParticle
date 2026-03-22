@@ -51,8 +51,8 @@ class InterfaceListener(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("HexParticle Sniffer")
-        # self.resize(600, 500)
-        self.showFullScreen()
+        self.resize(1000, 600)
+        # self.showFullScreen()
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
         layout = QVBoxLayout(self)
@@ -141,8 +141,7 @@ class InterfaceListener(QWidget):
 
         src_ip = ipv6_to_str(ipv6.src)
         dst_ip = ipv6_to_str(ipv6.dst)
-
-        length = 100 # ethernet.len
+        length = pwrapper.length
         
         protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv6.next_hdr)
         info = f"IPv6"
@@ -156,9 +155,7 @@ class InterfaceListener(QWidget):
 
         src_ip = ip_to_str(ipv4.src)
         dst_ip = ip_to_str(ipv4.dst)
-
-        # dummy length
-        length = 100 # ethernet.len
+        length = pwrapper.length
         
         protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv4.proto)
         info = f"TTL: {ipv4.ttl}, ID: {ipv4.id}"
@@ -183,13 +180,14 @@ class InterfaceListener(QWidget):
         ethernet = pwrapper.layers[0] # Ethernet
         arp = pwrapper.layers[1] # ARP follows Ethernet
         
+        src_mac = mac_to_str(arp.sha)
+        dst_mac = mac_to_str(arp.tha)
+        length = pwrapper.length
+
         src_ip = ip_to_str(arp.spa)
         dst_ip = ip_to_str(arp.tpa)
-        src_mac = mac_to_str(arp.sha)
         
         protocol_str = "ARP"
-        length = 100 #ethernet.len
-
         info = "ARP Packet"
         
         if arp.op == protos.ARP_REQUEST:
@@ -197,7 +195,7 @@ class InterfaceListener(QWidget):
         elif arp.op == protos.ARP_RESPONSE:
             info = f"{src_ip} is at {src_mac}"
 
-        self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
+        self.add_packet_row(src_mac, dst_mac, protocol_str, length, info, pwrapper)
 
 
     def add_packet_row(self, src, dst, proto, length, info, pwrapper):

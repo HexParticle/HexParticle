@@ -67,14 +67,12 @@ class PacketWrapper:
         protocols.ProtocolType.UDP:     	  protocols.UDPHeader,
         protocols.ProtocolType.IPV6:		  protocols.IPV6Header,
         protocols.ProtocolType.ICMP:		  protocols.ICMPHeader,
-        # protocols.ProtocolType.IPV6_EXT_FRAG: 		protocols.IPv6ExtFragHeader,
-        # protocols.ProtocolType.IPV6_EXT_DST_OPTS: 	protocols.IPv6ExtOptsHeader,
-        # protocols.ProtocolType.IPV6_EXT_HOP_BY_HOP: protocols.IPv6ExtRoutingHeader,
     }
     
     def __init__(self, head_node_ptr):
         self.layers = []
         self.raw = bytearray()
+        self.length = None
         
         current = head_node_ptr
         
@@ -103,17 +101,18 @@ class PacketWrapper:
             print(f"SKIPPED: Node type {node.type} has a NULL header pointer!")
             return None
 
+        if getattr(node, "length", None) is None:
+            print("Field 'length' literally does not exist on node!")
+            return None
+        elif self.length is None:
+            self.length = node.length
+
         ptr = ctypes.cast(node.hdr, ctypes.POINTER(header_class))
         return header_class.from_buffer_copy(ptr.contents)
 
 
     def __repr__(self):
         return " -> ".join([type(l).__name__ for l in self.layers])
-
-
-@dataclass
-class IPFragment:
-    id: int
 
 
 class HexParticle():

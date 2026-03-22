@@ -5,16 +5,9 @@ import typing
 
 import hex.protocols as protocols
 
-class TcpState(typing.NamedTuple):
-    src_host: str
-    dst_host: str
-    src_port: int
-    dst_port: int
-
-
 class TCPConnectionCtx:
     def __init__(self):
-        self.__conns: typing.Dict[TcpState, typing.List] = {}
+        self.__conns: typing.Dict[tuple, typing.List] = {}
 
     
     def manage_tcp_packet(self, ip: protocols.IPV4Header, tcp: protocols.TCPHeader):
@@ -24,15 +17,12 @@ class TCPConnectionCtx:
         dst_host = '.'.join(str(b) for b in ip.dst)
         dst_port = int(tcp.dport)
 
-        state = TcpState(src_host, dst_host, src_port, dst_port)
-        stream_key = self.gen_tcp_stream_key(state)
+        stream_key = self.gen_tcp_stream_key(src_host, src_port, dst_host, dst_port)
 
-        conn = self.__conns.get(stream_key)
-        if conn:
-            self.__conns[stream_key].append(tcp)
-        else:
-            self.__conns[stream_key] = [tcp]
-
+        if stream_key not in self.__conns:
+            self.__conns[stream_key] = []
+        
+        self.__conns[stream_key].append(tcp)
         return stream_key
 
     
@@ -44,8 +34,8 @@ class TCPConnectionCtx:
         return self.__conns.get(stream_key) is not None
 
 
-    def gen_tcp_stream_key(self, tcp_state: TcpState):
-        endpoint1 = (tcp_state.src_host, tcp_state.src_port)
-        endpoint2 = (tcp_state.dst_host, tcp_state.dst_port)
+    def gen_tcp_stream_key(self, src_host, src_port, dst_host, dst_port):
+        endpoint1 = (src_host, src_port)
+        endpoint2 = (dst_host, dst_port)
     
         return tuple(sorted((endpoint1, endpoint2)))
