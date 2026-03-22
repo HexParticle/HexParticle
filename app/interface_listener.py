@@ -240,7 +240,7 @@ class InterfaceListener(QWidget):
             selected_packet = self.packets[row_index]
             
             self.dissector.display_packet(selected_packet)
-            # self.hex_viewer.set_data(selected_packet.raw)
+            self.hex_viewer.set_data(selected_packet.raw)
 
 
     def stop_sniffing(self):
