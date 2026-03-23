@@ -8,8 +8,6 @@ from PyQt6.QtCore import QThread, pyqtSignal
 import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
-import dataclasses
-
 from hex.lib_wrapper import HexParticle, PacketWrapper
 from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip, icmp
 from protocol_dissector import ProtocolDissector
@@ -128,72 +126,14 @@ class InterfaceListener(QWidget):
 
         self.construct_row(pwrapper)
 
-
-    def handle_ipv6_packet(self, pwrapper):
-        ipv6 = pwrapper.layers[1] # IPV4 follows Ethernet
-
-        src_ip = ipv6_to_str(ipv6.src)
-        dst_ip = ipv6_to_str(ipv6.dst)
-        length = pwrapper.length
-        
-        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv6.next_hdr)
-        info = f"IPv6"
-
-        self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
-
-
-    def handle_ipv4_packet(self, pwrapper):
-        ipv4 = pwrapper.layers[1] # IPV4 follows Ethernet
-
-        src_ip = ip_to_str(ipv4.src)
-        dst_ip = ip_to_str(ipv4.dst)
-        length = pwrapper.length
-        
-        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv4.proto)
-        info = f"TTL: {ipv4.ttl}, ID: {ipv4.id}"
-        
-        if len(pwrapper.layers) > 2:
-            next_layer = pwrapper.layers[2]
-            if isinstance(next_layer, protos.TCPHeader):
-                info = f"Port: {next_layer.sport} -> {next_layer.dport} [Seq={next_layer.seq}]"
-            elif isinstance(next_layer, protos.UDPHeader):
-                info = f"Port: {next_layer.sport} -> {next_layer.dport}"
-            elif isinstance(next_layer, protos.ICMPHeader):
-                info = f"Internet Control Message Protocol"
-
-        self.add_packet_row(src_ip, dst_ip, protocol_str, length, info, pwrapper)
-
     
-    def fmt_mac(self, mac_array):
-        return ":".join(f"{b:02x}" for b in mac_array)
-
-
-    def handle_arp_packet(self, pwrapper):
-        arp = pwrapper.layers[1] # ARP follows Ethernet
-        
-        src_mac = mac_to_str(arp.sha)
-        dst_mac = mac_to_str(arp.tha)
-        length = pwrapper.length
-
-        src_ip = ip_to_str(arp.spa)
-        dst_ip = ip_to_str(arp.tpa)
-        
-        protocol_str = "ARP"
-        info = "ARP Packet"
-        
-        if arp.op == protos.ARP_REQUEST:
-            info = f"Who has {dst_ip}? Tell {src_ip} ({src_mac})"
-        elif arp.op == protos.ARP_RESPONSE:
-            info = f"{src_ip} is at {src_mac}"
-
-        self.add_packet_row(src_mac, dst_mac, protocol_str, length, info, pwrapper)
-
-        
     def construct_row(self, pw: PacketWrapper):
         net_layer_pack = pw.layers[1]
 
         if isinstance(net_layer_pack, protos.IPV4Header):
             self.construct_ipv4_row(pw)
+        elif isinstance(net_layer_pack, protos.IPV6Header):
+            self.construct_ipv6_row(pw)
         elif isinstance(net_layer_pack, protos.ARPHeader):
             self.construct_arp_row(pw)
         
@@ -212,11 +152,15 @@ class InterfaceListener(QWidget):
 
     
     def construct_tcp_row(self, pwrapper: PacketWrapper):
-        iph: protos.IPV4Header = pwrapper.layers[1]
+        iph = pwrapper.layers[1]
         tcph: protos.TCPHeader = pwrapper.layers[2]
 
-        src_ip = ip_to_str(iph.src)
-        dst_ip = ip_to_str(iph.dst)
+        if isinstance(iph, protos.IPV4Header):
+            src_ip = ip_to_str(iph.src)
+            dst_ip = ip_to_str(iph.dst)
+        else:
+            src_ip = ipv6_to_str(iph.src)
+            dst_ip = ipv6_to_str(iph.dst)
 
         src_port = tcph.sport
         dst_port = tcph.dport
@@ -224,22 +168,26 @@ class InterfaceListener(QWidget):
         ack = tcph.ack
         flags = " | ".join(tcph.flags_str())
 
-        info = f"{src_port} -> {dst_port}{f' [{flags}]' if flags else ''} Seq={seq} Ack={ack}"
+        info = f"{src_port} -> {dst_port}{f', [{flags}]' if flags else ''}, Seq={seq}, Ack={ack}"
         self.add_packet_row(src_ip, dst_ip, 'TCP', pwrapper.length, info, pwrapper)
 
     
     def construct_udp_row(self, pwrapper: PacketWrapper):
-        iph: protos.IPV4Header = pwrapper.layers[1]
+        iph = pwrapper.layers[1]
         udph: protos.TCPHeader = pwrapper.layers[2]
 
-        src_ip = ip_to_str(iph.src)
-        dst_ip = ip_to_str(iph.dst)
+        if isinstance(iph, protos.IPV4Header):
+            src_ip = ip_to_str(iph.src)
+            dst_ip = ip_to_str(iph.dst)
+        else:
+            src_ip = ipv6_to_str(iph.src)
+            dst_ip = ipv6_to_str(iph.dst)
 
         src_port = udph.sport
         dst_port = udph.dport
         length = udph.length
 
-        info = f"{src_port} -> {dst_port} Len={length}"
+        info = f"{src_port} -> {dst_port}, Len={length}"
         self.add_packet_row(src_ip, dst_ip, 'UDP', pwrapper.length, info, pwrapper)
 
     
@@ -257,15 +205,19 @@ class InterfaceListener(QWidget):
 
 
     def construct_ipv6_row(self, pwrapper: PacketWrapper):
-        ipv6 = pwrapper.layers[1]
+        if len(pwrapper.layers) < 3:
+            # raise RowConstructionError("Layer count must be at least 3!")
 
-        src_ip = ipv6_to_str(ipv6.src)
-        dst_ip = ipv6_to_str(ipv6.dst)
-        
-        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv6.next_hdr)
-        info = f"IPv6"
+            # accepts only TCP and UP at the moment
+            return
 
-        self.add_packet_row(src_ip, dst_ip, protocol_str, pwrapper.length, info, pwrapper)
+        transport_layer_pack = pwrapper.layers[2]
+        if isinstance(transport_layer_pack, protos.ICMPHeader):
+            return self.construct_icmp_row(pwrapper)
+        elif isinstance(transport_layer_pack, protos.TCPHeader):
+            return self.construct_tcp_row(pwrapper)
+        elif isinstance(transport_layer_pack, protos.UDPHeader):
+            return self.construct_udp_row(pwrapper)
 
     
     def construct_arp_row(self, pwrapper: PacketWrapper):
@@ -324,14 +276,6 @@ class InterfaceListener(QWidget):
             self.worker.wait()
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-
-
-@dataclasses.dataclass
-class PacketRow():
-    src: str
-    dst: str
-    len: int
-    info: str
 
 
 class RowConstructionError(ValueError):

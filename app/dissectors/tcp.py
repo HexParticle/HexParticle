@@ -5,16 +5,11 @@ import PyQt6.QtWidgets as widgets
 from PyQt6 import QtCore
 
 # hexp
-from hex.protocols import TCPHeader
+from hex.protocols import TCPHeader, tcp
 
 import typing
 
 class TCPDissectorComponent:
-    FLAGS = {
-        0x01: "FIN", 0x02: "SYN", 0x04: "RST", 
-        0x08: "PSH", 0x10: "ACK", 0x20: "URG"
-    }
-
     @staticmethod
     def dissect(parent_node, tcp_header, _previous_node = None):
         """Adds TCP details to the tree."""
@@ -27,11 +22,11 @@ class TCPDissectorComponent:
         widgets.QTreeWidgetItem(tcp_item, ["Window Size", str(tcp_header.win)])
         
         flag_val = tcp_header.flags
-        active_flags = [name for mask, name in TCPDissectorComponent.FLAGS.items() if flag_val & mask]
+        active_flags = [name for mask, name in tcp.FLAG_MEANING.items() if flag_val & mask]
         flag_str = f"0x{flag_val:02x} ({', '.join(active_flags)})"
         
         flag_node = widgets.QTreeWidgetItem(tcp_item, ["Flags", flag_str])
-        for mask, name in TCPDissectorComponent.FLAGS.items():
+        for mask, name in tcp.FLAG_MEANING.items():
             state = "Set" if flag_val & mask else "Not set"
             widgets.QTreeWidgetItem(flag_node, [f"... {name}", state])
             
@@ -61,15 +56,7 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
         layout.addWidget(self.table)
 
     def decode_flags(self, flags_byte: int) -> str:
-        flag_map = {
-            0x01: "FIN",
-            0x02: "SYN",
-            0x04: "RST",
-            0x08: "PSH",
-            0x10: "ACK",
-            0x20: "URG"
-        }
-        active_flags = [name for bit, name in flag_map.items() if flags_byte & bit]
+        active_flags = [name for bit, name in tcp.FLAG_MEANING.items() if flags_byte & bit]
         return " | ".join(active_flags) if active_flags else "None"
 
     def populate_table(self):
