@@ -62,7 +62,6 @@ class InterfaceListener(QWidget):
         self.search_bar.textChanged.connect(self.filter_table)
         layout.addWidget(self.search_bar)
         
-        layout.addWidget(QLabel("Live Packets (IPv4 Protocol Mapping):"))
         self.main_splitter = pyqtw.QSplitter(QtCore.Qt.Orientation.Vertical)
 
         self.packet_table = QTableWidget()
@@ -154,7 +153,7 @@ class InterfaceListener(QWidget):
     def construct_tcp_row(self, pwrapper: PacketWrapper):
         iph = pwrapper.layers[1]
         tcph: protos.TCPHeader = pwrapper.layers[2]
-
+        
         if isinstance(iph, protos.IPV4Header):
             src_ip = ip_to_str(iph.src)
             dst_ip = ip_to_str(iph.dst)

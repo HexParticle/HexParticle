@@ -108,7 +108,55 @@ class PacketWrapper:
             self.length = node.length
 
         ptr = ctypes.cast(node.hdr, ctypes.POINTER(header_class))
-        return header_class.from_buffer_copy(ptr.contents)
+        header = header_class.from_buffer_copy(ptr.contents)
+
+        if isinstance(header, protocols.TCPHeader):
+            if header.header_length > 20:
+                opts_length = header.header_length - 20
+                raw_data_ptr = ctypes.cast(node.hdr, ctypes.POINTER(ctypes.c_uint8 * header.header_length))
+                opts_bytes = raw_data_ptr.contents[20:header.header_length]
+                self.insert_tcp_options(header, opts_bytes, opts_length)
+            else:
+                header.options = []
+
+        return header
+    
+
+    def insert_tcp_options(self, tcp_header: protocols.TCPHeader, opts_raw_stream, opts_length: int):
+        options = []
+        
+        idx = 0
+        while idx < opts_length:
+            kind = opts_raw_stream[idx]
+
+            if kind == 0: break # End of options list
+
+            if kind == 1: # No operation
+                idx += 1 # NOP takes 1 byte
+                options.append(protocols.TCPOption.nop())
+                continue
+
+            if idx + 1 >= opts_length:
+                break # might be a malformed packet
+
+            length = opts_raw_stream[idx + 1]
+
+            if length < 2 or (idx + length) > opts_length:
+                break
+
+            data_start = idx + 2
+            data_end = idx + length
+            data = opts_raw_stream[data_start:data_end]
+
+            opt = protocols.TCPOption()
+            opt.kind = kind
+            opt.length = length
+            opt.set_data(data)
+            options.append(opt)
+
+            idx += length
+
+        tcp_header.set_options(options)
 
 
     def __repr__(self):
