@@ -4,6 +4,7 @@
 import ctypes
 
 from . import ip
+from . import tcp
 
 # --- Layer 2 EtherTypes ---
 # Used in the Ethernet frame to determine which protocol is encapsulated
@@ -192,6 +193,16 @@ class TCPHeader(ctypes.Structure):
         ("chk", 	ctypes.c_uint16),      # Checksum
         ("urg", 	ctypes.c_uint16),      # Urgent Pointer
     ]
+
+    def flags_num(self) -> int:
+        return self.flags_str
+    
+    def flags_str(self):
+        return [
+            tcp.FLAG_MEANING.get(f)
+            for f in [1, 2, 4, 8, 16, 32, 64, 128]
+            if (f & self.flags)
+        ]
 
 
 class UDPHeader(ctypes.Structure):

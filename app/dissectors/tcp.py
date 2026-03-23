@@ -81,7 +81,7 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
                 str(header.dport),
                 str(header.seq),
                 str(header.ack),
-                self.decode_flags(header.flags),
+                self.decode_flags(header.flags_str),
                 str(header.win)
             ]
 
@@ -90,6 +90,6 @@ class TCPSessionAssemblyWindow(widgets.QWidget):
                 item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 self.table.setItem(row, col, item)
 
-            if header.flags & 0x08: 
+            if header.flags_str & 0x08: 
                 for col in range(6):
                     self.table.item(row, col).setBackground(QtCore.Qt.GlobalColor.lightGray)

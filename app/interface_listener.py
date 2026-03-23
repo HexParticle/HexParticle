@@ -8,8 +8,10 @@ from PyQt6.QtCore import QThread, pyqtSignal
 import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
+import dataclasses
+
 from hex.lib_wrapper import HexParticle, PacketWrapper
-from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip
+from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip, icmp
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
 
@@ -122,21 +124,12 @@ class InterfaceListener(QWidget):
 
     def process_incoming_packet(self, pwrapper: PacketWrapper):
         if pwrapper is None or len(pwrapper.layers) == 0:
-            return
+            raise RowConstructionError("Layer count must be at least 1")
 
-        if len(pwrapper.layers) > 1:
-            next_layer = pwrapper.layers[1]
-            
-            if isinstance(next_layer, protos.IPV4Header):
-                self.handle_ipv4_packet(pwrapper)
-            elif isinstance(next_layer, protos.IPV6Header):
-                self.handle_ipv6_packet(pwrapper)
-            elif isinstance(next_layer, protos.ARPHeader):
-                self.handle_arp_packet(pwrapper)
+        self.construct_row(pwrapper)
 
 
     def handle_ipv6_packet(self, pwrapper):
-        ethernet = pwrapper.layers[0] # Ethernet
         ipv6 = pwrapper.layers[1] # IPV4 follows Ethernet
 
         src_ip = ipv6_to_str(ipv6.src)
@@ -150,7 +143,6 @@ class InterfaceListener(QWidget):
 
 
     def handle_ipv4_packet(self, pwrapper):
-        ethernet = pwrapper.layers[0] # Ethernet
         ipv4 = pwrapper.layers[1] # IPV4 follows Ethernet
 
         src_ip = ip_to_str(ipv4.src)
@@ -177,7 +169,6 @@ class InterfaceListener(QWidget):
 
 
     def handle_arp_packet(self, pwrapper):
-        ethernet = pwrapper.layers[0] # Ethernet
         arp = pwrapper.layers[1] # ARP follows Ethernet
         
         src_mac = mac_to_str(arp.sha)
@@ -196,6 +187,104 @@ class InterfaceListener(QWidget):
             info = f"{src_ip} is at {src_mac}"
 
         self.add_packet_row(src_mac, dst_mac, protocol_str, length, info, pwrapper)
+
+        
+    def construct_row(self, pw: PacketWrapper):
+        net_layer_pack = pw.layers[1]
+
+        if isinstance(net_layer_pack, protos.IPV4Header):
+            self.construct_ipv4_row(pw)
+        elif isinstance(net_layer_pack, protos.ARPHeader):
+            self.construct_arp_row(pw)
+        
+    
+    def construct_ipv4_row(self, pw: PacketWrapper):
+        if len(pw.layers) < 3:
+            raise RowConstructionError("Layer count must be at least 3!")
+        
+        transport_layer_pack = pw.layers[2]
+        if isinstance(transport_layer_pack, protos.ICMPHeader):
+            return self.construct_icmp_row(pw)
+        elif isinstance(transport_layer_pack, protos.TCPHeader):
+            return self.construct_tcp_row(pw)
+        elif isinstance(transport_layer_pack, protos.UDPHeader):
+            return self.construct_udp_row(pw)
+
+    
+    def construct_tcp_row(self, pwrapper: PacketWrapper):
+        iph: protos.IPV4Header = pwrapper.layers[1]
+        tcph: protos.TCPHeader = pwrapper.layers[2]
+
+        src_ip = ip_to_str(iph.src)
+        dst_ip = ip_to_str(iph.dst)
+
+        src_port = tcph.sport
+        dst_port = tcph.dport
+        seq = tcph.seq
+        ack = tcph.ack
+        flags = " | ".join(tcph.flags_str())
+
+        info = f"{src_port} -> {dst_port}{f' [{flags}]' if flags else ''} Seq={seq} Ack={ack}"
+        self.add_packet_row(src_ip, dst_ip, 'TCP', pwrapper.length, info, pwrapper)
+
+    
+    def construct_udp_row(self, pwrapper: PacketWrapper):
+        iph: protos.IPV4Header = pwrapper.layers[1]
+        udph: protos.TCPHeader = pwrapper.layers[2]
+
+        src_ip = ip_to_str(iph.src)
+        dst_ip = ip_to_str(iph.dst)
+
+        src_port = udph.sport
+        dst_port = udph.dport
+        length = udph.length
+
+        info = f"{src_port} -> {dst_port} Len={length}"
+        self.add_packet_row(src_ip, dst_ip, 'UDP', pwrapper.length, info, pwrapper)
+
+    
+    def construct_icmp_row(self, pwrapper: PacketWrapper):
+        iph: protos.IPV4Header = pwrapper.layers[1]
+        icmph: protos.ICMPHeader = pwrapper.layers[2]
+
+        src_ip = ip_to_str(iph.src)
+        dst_ip = ip_to_str(iph.dst)
+
+        type_ = icmph.type
+        info = icmp.icmp_type_meaning(type_)
+
+        self.add_packet_row(src_ip, dst_ip, 'ICMP', pwrapper.length, info, pwrapper)
+
+
+    def construct_ipv6_row(self, pwrapper: PacketWrapper):
+        ipv6 = pwrapper.layers[1]
+
+        src_ip = ipv6_to_str(ipv6.src)
+        dst_ip = ipv6_to_str(ipv6.dst)
+        
+        protocol_str = ip.IP_PROTOCOL_NAMES_SHORT.get(ipv6.next_hdr)
+        info = f"IPv6"
+
+        self.add_packet_row(src_ip, dst_ip, protocol_str, pwrapper.length, info, pwrapper)
+
+    
+    def construct_arp_row(self, pwrapper: PacketWrapper):
+        arp = pwrapper.layers[1]
+        
+        src_mac = mac_to_str(arp.sha)
+        dst_mac = mac_to_str(arp.tha)
+
+        src_ip = ip_to_str(arp.spa)
+        dst_ip = ip_to_str(arp.tpa)
+        
+        info = "ARP Packet"
+        
+        if arp.op == protos.ARP_REQUEST:
+            info = f"Who has {dst_ip}? Tell {src_ip} ({src_mac})"
+        elif arp.op == protos.ARP_RESPONSE:
+            info = f"{src_ip} is at {src_mac}"
+
+        self.add_packet_row(src_mac, dst_mac, "ARP", pwrapper.length, info, pwrapper)
 
 
     def add_packet_row(self, src, dst, proto, length, info, pwrapper):
@@ -235,3 +324,16 @@ class InterfaceListener(QWidget):
             self.worker.wait()
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
+
+
+@dataclasses.dataclass
+class PacketRow():
+    src: str
+    dst: str
+    len: int
+    info: str
+
+
+class RowConstructionError(ValueError):
+    def __init__(self, *args):
+        super().__init__(*args)
