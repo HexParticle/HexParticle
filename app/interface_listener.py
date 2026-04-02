@@ -1,22 +1,24 @@
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2023 Kagati Foundation <https://kagatifoundation.github.org>
+# SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
-                                    QTableWidget, QTableWidgetItem, QPushButton, QLabel)
+                                    QTableWidget, QTableWidgetItem, QPushButton, QMenu)
 from PyQt6.QtCore import QThread, pyqtSignal
 
 import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
-from hex.lib_wrapper import HexParticle, PacketWrapper
+from hex.lib_wrapper import HexParticle
+from hex.packet import DissectedPacket
 from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip, icmp
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
+import tcp_conn_ctx as tcpcon
 
 import style_loader
 
 class HexParticleWorker(QThread):
-    packet_received = pyqtSignal(PacketWrapper)
+    packet_received = pyqtSignal(DissectedPacket)
 
     def __init__(self, interface):
         super().__init__()
@@ -46,6 +48,16 @@ class InterfaceListener(QWidget):
         self.worker = None
         self.interface = interface
         self.packets = []
+
+		# the most recent packet
+        self.most_recent_packet: DissectedPacket = None
+
+        # the currently selected packet
+        self.selected_packet: DissectedPacket = None
+
+        # reassembling TCP segments
+        self.tcp_conns: tcpcon.TCPConnectionCtx = tcpcon.TCPConnectionCtx()
+
         self.init_ui()
 
 
@@ -73,6 +85,8 @@ class InterfaceListener(QWidget):
         # self.packet_table.setAlternatingRowColors(True)
 
         self.packet_table.itemClicked.connect(self.on_row_selected)
+        self.packet_table.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.packet_table.customContextMenuRequested.connect(self.show_row_context_menu)
 
         self.main_splitter.addWidget(self.packet_table)
 
@@ -119,40 +133,41 @@ class InterfaceListener(QWidget):
         self.worker.start()
 
 
-    def process_incoming_packet(self, pwrapper: PacketWrapper):
-        if pwrapper is None or len(pwrapper.layers) == 0:
+    def process_incoming_packet(self, dissected_pack: DissectedPacket):
+        if dissected_pack is None or len(dissected_pack._layers) == 0:
             raise RowConstructionError("Layer count must be at least 1")
 
-        self.construct_row(pwrapper)
+        self.most_recent_packet = dissected_pack
+        self.construct_row(dissected_pack)
 
     
-    def construct_row(self, pw: PacketWrapper):
-        net_layer_pack = pw.layers[1]
+    def construct_row(self, dp: DissectedPacket):
+        net_layer_pack = dp._layers[1]
 
         if isinstance(net_layer_pack, protos.IPV4Header):
-            self.construct_ipv4_row(pw)
+            self.construct_ipv4_row(dp)
         elif isinstance(net_layer_pack, protos.IPV6Header):
-            self.construct_ipv6_row(pw)
+            self.construct_ipv6_row(dp)
         elif isinstance(net_layer_pack, protos.ARPHeader):
-            self.construct_arp_row(pw)
+            self.construct_arp_row(dp)
         
     
-    def construct_ipv4_row(self, pw: PacketWrapper):
-        if len(pw.layers) < 3:
+    def construct_ipv4_row(self, dp: DissectedPacket):
+        if dp.packets_count() < 3:
             raise RowConstructionError("Layer count must be at least 3!")
         
-        transport_layer_pack = pw.layers[2]
+        transport_layer_pack = dp._layers[2]
         if isinstance(transport_layer_pack, protos.ICMPHeader):
-            return self.construct_icmp_row(pw)
+            return self.construct_icmp_row(dp)
         elif isinstance(transport_layer_pack, protos.TCPHeader):
-            return self.construct_tcp_row(pw)
+            return self.construct_tcp_row(dp)
         elif isinstance(transport_layer_pack, protos.UDPHeader):
-            return self.construct_udp_row(pw)
+            return self.construct_udp_row(dp)
 
     
-    def construct_tcp_row(self, pwrapper: PacketWrapper):
-        iph = pwrapper.layers[1]
-        tcph: protos.TCPHeader = pwrapper.layers[2]
+    def construct_tcp_row(self, dissected_pack: DissectedPacket):
+        iph = dissected_pack._layers[1]
+        tcph: protos.TCPHeader = dissected_pack._layers[2]
         
         if isinstance(iph, protos.IPV4Header):
             src_ip = ip_to_str(iph.src)
@@ -161,6 +176,8 @@ class InterfaceListener(QWidget):
             src_ip = ipv6_to_str(iph.src)
             dst_ip = ipv6_to_str(iph.dst)
 
+        self.current_session_key = self.tcp_conns.manage_tcp_packet(iph, tcph)
+
         src_port = tcph.sport
         dst_port = tcph.dport
         seq = tcph.seq
@@ -168,12 +185,12 @@ class InterfaceListener(QWidget):
         flags = " | ".join(tcph.flags_str())
 
         info = f"{src_port} -> {dst_port}{f', [{flags}]' if flags else ''}, Seq={seq}, Ack={ack}"
-        self.add_packet_row(src_ip, dst_ip, 'TCP', pwrapper.length, info, pwrapper)
+        self.add_packet_row(src_ip, dst_ip, 'TCP', dissected_pack.length, info, dissected_pack)
 
     
-    def construct_udp_row(self, pwrapper: PacketWrapper):
-        iph = pwrapper.layers[1]
-        udph: protos.TCPHeader = pwrapper.layers[2]
+    def construct_udp_row(self, dissected_pack: DissectedPacket):
+        iph = dissected_pack._layers[1]
+        udph: protos.TCPHeader = dissected_pack._layers[2]
 
         if isinstance(iph, protos.IPV4Header):
             src_ip = ip_to_str(iph.src)
@@ -187,12 +204,12 @@ class InterfaceListener(QWidget):
         length = udph.length
 
         info = f"{src_port} -> {dst_port}, Len={length}"
-        self.add_packet_row(src_ip, dst_ip, 'UDP', pwrapper.length, info, pwrapper)
+        self.add_packet_row(src_ip, dst_ip, 'UDP', dissected_pack.length, info, dissected_pack)
 
     
-    def construct_icmp_row(self, pwrapper: PacketWrapper):
-        iph: protos.IPV4Header = pwrapper.layers[1]
-        icmph: protos.ICMPHeader = pwrapper.layers[2]
+    def construct_icmp_row(self, dissected_pack: DissectedPacket):
+        iph: protos.IPV4Header = dissected_pack._layers[1]
+        icmph: protos.ICMPHeader = dissected_pack._layers[2]
 
         src_ip = ip_to_str(iph.src)
         dst_ip = ip_to_str(iph.dst)
@@ -200,27 +217,27 @@ class InterfaceListener(QWidget):
         type_ = icmph.type
         info = icmp.icmp_type_meaning(type_)
 
-        self.add_packet_row(src_ip, dst_ip, 'ICMP', pwrapper.length, info, pwrapper)
+        self.add_packet_row(src_ip, dst_ip, 'ICMP', dissected_pack.length, info, dissected_pack)
 
 
-    def construct_ipv6_row(self, pwrapper: PacketWrapper):
-        if len(pwrapper.layers) < 3:
+    def construct_ipv6_row(self, dissected_pack: DissectedPacket):
+        if len(dissected_pack._layers) < 3:
             # raise RowConstructionError("Layer count must be at least 3!")
 
             # accepts only TCP and UP at the moment
             return
 
-        transport_layer_pack = pwrapper.layers[2]
+        transport_layer_pack = dissected_pack._layers[2]
         if isinstance(transport_layer_pack, protos.ICMPHeader):
-            return self.construct_icmp_row(pwrapper)
+            return self.construct_icmp_row(dissected_pack)
         elif isinstance(transport_layer_pack, protos.TCPHeader):
-            return self.construct_tcp_row(pwrapper)
+            return self.construct_tcp_row(dissected_pack)
         elif isinstance(transport_layer_pack, protos.UDPHeader):
-            return self.construct_udp_row(pwrapper)
+            return self.construct_udp_row(dissected_pack)
 
     
-    def construct_arp_row(self, pwrapper: PacketWrapper):
-        arp = pwrapper.layers[1]
+    def construct_arp_row(self, dissected_pack: DissectedPacket):
+        arp = dissected_pack._layers[1]
         
         src_mac = mac_to_str(arp.sha)
         dst_mac = mac_to_str(arp.tha)
@@ -235,14 +252,14 @@ class InterfaceListener(QWidget):
         elif arp.op == protos.ARP_RESPONSE:
             info = f"{src_ip} is at {src_mac}"
 
-        self.add_packet_row(src_mac, dst_mac, "ARP", pwrapper.length, info, pwrapper)
+        self.add_packet_row(src_mac, dst_mac, "ARP", dissected_pack.length, info, dissected_pack)
 
 
-    def add_packet_row(self, src, dst, proto, length, info, pwrapper):
+    def add_packet_row(self, src: str, dst: str, proto: int, length: int, info: str, dissected_pack: DissectedPacket):
         row = self.packet_table.rowCount()
         self.packet_table.insertRow(row)
 
-        self.packets.append(pwrapper)
+        self.packets.append(dissected_pack)
 
         src_item = QTableWidgetItem(str(src))
         src_item.setData(QtCore.Qt.ItemDataRole.UserRole, len(self.packets) - 1)
@@ -263,10 +280,10 @@ class InterfaceListener(QWidget):
         row_index = item.row()
         
         if row_index < len(self.packets):
-            selected_packet = self.packets[row_index]
+            self.selected_packet = self.packets[row_index]
             
-            self.dissector.display_packet(selected_packet)
-            self.hex_viewer.set_data(selected_packet.raw)
+            self.dissector.display_packet(self.selected_packet)
+            self.hex_viewer.set_data(self.selected_packet._raw)
 
 
     def stop_sniffing(self):
@@ -275,6 +292,19 @@ class InterfaceListener(QWidget):
             self.worker.wait()
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
+
+    
+    def show_row_context_menu(self, position: QtCore.QPoint):
+        menu = QMenu()
+        packet = self.packet_table.itemAt(position)
+
+        print(repr(position))
+        
+        if packet:
+            action_follow = menu.addAction(f"Follow")
+            action = menu.exec(self.packet_table.mapToGlobal(position))
+            if action == action_follow:
+                print(f"Following a TCP stream...")
 
 
 class RowConstructionError(ValueError):

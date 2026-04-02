@@ -3,6 +3,7 @@
 
 # hexp
 from hex import protocols as protos
+from hex.packet import DissectedPacket
 
 import dissectors
 import tcp_conn_ctx as tcpcon
@@ -26,13 +27,13 @@ class ProtocolDissector(widgets.QWidget):
         self.current_session_key = None
         self.session_windows = [] # keeping references so windows don't close immediately
 
-        # self.button_layout = widgets.QHBoxLayout()
-        # self.session_btn = widgets.QPushButton("Follow TCP Stream")
-        # self.session_btn.setEnabled(False)
-        # self.session_btn.clicked.connect(self.on_session_button_clicked)
-        # self.button_layout.addWidget(self.session_btn)
-        # self.button_layout.addStretch()
-        # self.layout.addLayout(self.button_layout)
+        self.button_layout = widgets.QHBoxLayout()
+        self.session_btn = widgets.QPushButton("Follow TCP Stream")
+        self.session_btn.setEnabled(False)
+        self.session_btn.clicked.connect(self.on_session_button_clicked)
+        self.button_layout.addWidget(self.session_btn)
+        self.button_layout.addStretch()
+        self.layout.addLayout(self.button_layout)
 
         self.tree = widgets.QTreeWidget()
         self.tree.setHeaderLabels(["Field", "Value"])
@@ -50,21 +51,21 @@ class ProtocolDissector(widgets.QWidget):
         }
 
 
-    def display_packet(self, pwrapper):
+    def display_packet(self, dissected_pack: DissectedPacket):
         self.tree.clear()
         self.current_session_key = None
-        # self.session_btn.setEnabled(False)
+        self.session_btn.setEnabled(False)
         
         previous_node = None
         __layer_ip_packet = None
          
-        for layer in pwrapper.layers:
+        for layer in dissected_pack:
             if isinstance(layer, protos.IPV4Header):
                 __layer_ip_packet = layer
 
             if __layer_ip_packet is not None and isinstance(layer, protos.TCPHeader): # trace only ipv4
                 self.current_session_key = self.tcp_conns.manage_tcp_packet(__layer_ip_packet, layer)
-                # self.session_btn.setEnabled(True)
+                self.session_btn.setEnabled(True)
 
             dissec_handler = self.dissection_handlers.get(type(layer))
             if dissec_handler:
