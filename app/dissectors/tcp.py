@@ -5,13 +5,13 @@ import PyQt6.QtWidgets as widgets
 from PyQt6 import QtCore
 
 # hexp
-from hexlib.protocols import TCPHeader, tcp
+from hexlib.protocol import tcp
 
 import typing
 
 class TCPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, tcp_header: TCPHeader, _previous_node = None):
+    def dissect(parent_node, tcp_header: tcp.TCPHeader, _previous_node = None):
         """Adds TCP details to the tree."""
         tcp_item = widgets.QTreeWidgetItem(parent_node, ["Transmission Control Protocol"])
         
@@ -35,7 +35,7 @@ class TCPDissectorComponent:
 
     
     @staticmethod
-    def dissect_options(tcp_node, tcp_header: TCPHeader):
+    def dissect_options(tcp_node, tcp_header: tcp.TCPHeader):
         opts_len = tcp_header.header_length - 20
         option_item = widgets.QTreeWidgetItem(tcp_node, ["Options", f"({opts_len} bytes)"])
 
@@ -64,7 +64,7 @@ class TCPDissectorComponent:
 
 
 class TCPSessionAssemblyWindow(widgets.QWidget):
-    def __init__(self, session: typing.List[TCPHeader]):
+    def __init__(self, session: typing.List[tcp.TCPHeader]):
         super().__init__()
         self.session = session
         self.setWindowTitle("TCP Session Segment List")

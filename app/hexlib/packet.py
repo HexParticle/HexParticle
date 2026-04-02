@@ -3,33 +3,33 @@
 
 import ctypes
 
-from . import protocols as proto
+from hexlib import ProtocolNode, ProtocolType,  protocol as proto
 
 class DissectedPacket:
     TYPE_MAP = {
-        proto.ProtocolType.ETH:     	  proto.EtherHeader,
-        proto.ProtocolType.IPV4:    	  proto.IPV4Header,
-        proto.ProtocolType.ARP:     	  proto.ARPHeader,
-        proto.ProtocolType.TCP:     	  proto.TCPHeader,
-        proto.ProtocolType.UDP:     	  proto.UDPHeader,
-        proto.ProtocolType.IPV6:		  proto.IPV6Header,
-        proto.ProtocolType.ICMP:		  proto.ICMPHeader,
+        ProtocolType.ETH:     	  proto.EtherHeader,
+        ProtocolType.IPV4:    	  proto.IPV4Header,
+        ProtocolType.ARP:     	  proto.ARPHeader,
+        ProtocolType.TCP:     	  proto.TCPHeader,
+        ProtocolType.UDP:     	  proto.UDPHeader,
+        ProtocolType.IPV6:		  proto.IPV6Header,
+        ProtocolType.ICMP:		  proto.ICMPHeader,
     }
     
-    def __init__(self, head_node_ptr: proto.ProtocolNode):
+    def __init__(self, head_node_ptr: ProtocolNode):
         self._layers = []
         self._raw = bytearray()
         self.length = None
 
-        self._transport_layer_proto_type: proto.ProtocolType = None
-        self._network_layer_proto_type: proto.ProtocolType = None
-        self._data_link_layer_proto_type: proto.ProtocolType = proto.ProtocolType.ETH
+        self._transport_layer_proto_type: ProtocolType = None
+        self._network_layer_proto_type: ProtocolType = None
+        self._data_link_layer_proto_type: ProtocolType = ProtocolType.ETH
         
         current = head_node_ptr
         
         while current:
             node = current.contents
-            if node.type == proto.ProtocolType.IPV6_EXT:
+            if node.type == ProtocolType.IPV6_EXT:
                 print("ipv6 ext header")
 
             header_obj = self._cast_header(node)
@@ -78,21 +78,21 @@ class DissectedPacket:
     def identify_layer_types(self):
         for layer in self._layers:
             if isinstance(layer, proto.IPV4Header):
-                self._network_layer_proto_type = proto.ProtocolType.IPV4
+                self._network_layer_proto_type = ProtocolType.IPV4
             elif isinstance(layer, proto.IPV6Header):
-                self._network_layer_proto_type = proto.ProtocolType.IPV6
+                self._network_layer_proto_type = ProtocolType.IPV6
             elif isinstance(layer, proto.ARPHeader):
-                self._network_layer_proto_type = proto.ProtocolType.ARP
+                self._network_layer_proto_type = ProtocolType.ARP
             elif isinstance(layer, proto.TCPHeader):
-                self._transport_layer_proto_type = proto.ProtocolType.TCP
+                self._transport_layer_proto_type = ProtocolType.TCP
             elif isinstance(layer, proto.UDPHeader):
-                self._transport_layer_proto_type = proto.ProtocolType.UDP
+                self._transport_layer_proto_type = ProtocolType.UDP
             elif isinstance(layer, proto.ICMPHeader):
-                self._transport_layer_proto_type = proto.ProtocolType.ICMP
+                self._transport_layer_proto_type = ProtocolType.ICMP
 
     
     def is_tcp_packet(self) -> bool:
-        return self._transport_layer_proto_type == proto.ProtocolType.TCP 
+        return self._transport_layer_proto_type == ProtocolType.TCP 
 
     
     def get_tcp_layer(self) -> proto.TCPHeader:
@@ -104,23 +104,23 @@ class DissectedPacket:
 
     
     def is_ipv4_packet(self) -> bool:
-        return self._network_layer_proto_type == proto.ProtocolType.IPV4
+        return self._network_layer_proto_type == ProtocolType.IPV4
 
 	
     def is_udp_packet(self) -> bool:
-        return self._transport_layer_proto_type == proto.ProtocolType.UDP 
+        return self._transport_layer_proto_type == ProtocolType.UDP 
 
     
     def is_ipv6_packet(self) -> bool:
-        return self._network_layer_proto_type == proto.ProtocolType.IPV6
+        return self._network_layer_proto_type == ProtocolType.IPV6
 
 
     def is_icmp_packet(self) -> bool:
-        return self._transport_layer_proto_type == proto.ProtocolType.ICMP
+        return self._transport_layer_proto_type == ProtocolType.ICMP
     
     
     def is_arp_packet(self) -> bool:
-        return self._network_layer_proto_type == proto.ProtocolType.ARP
+        return self._network_layer_proto_type == ProtocolType.ARP
 
     
     def packets_count(self) -> int:

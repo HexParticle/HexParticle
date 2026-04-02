@@ -3,15 +3,16 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hexlib import protocols as proto
+from hexlib.protocol import udp
+from hexlib import COMMON_PORTS
 
 class UDPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, udp_header, _previous_node = None):
+    def dissect(parent_node, udp_header: udp.UDPHeader, _previous_node = None):
         udp_item = widgets.QTreeWidgetItem(parent_node, ["User Datagram Protocol"])
         widgets.QTreeWidgetItem(udp_item, ["Source Port", str(udp_header.sport)])
 
-        port_info = proto.COMMON_PORTS.get(udp_header.dport, "")
+        port_info = COMMON_PORTS.get(udp_header.dport, "")
         widgets.QTreeWidgetItem(udp_item, ["Destination Port", f"{udp_header.dport} {port_info}"])
 
         widgets.QTreeWidgetItem(udp_item, ["Length", f"{udp_header.length} bytes"])

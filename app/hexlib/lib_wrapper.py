@@ -3,8 +3,8 @@
 
 import ctypes
 
-from . import protocols
-from .packet import DissectedPacket
+from hexlib import ProtocolNode
+from hexlib.packet import DissectedPacket
 
 class HexInstance(ctypes.Structure):
     _fields_ = [
@@ -23,7 +23,7 @@ lib_hexp.create_hex_instance.argtypes = [ctypes.c_char_p]
 lib_hexp.create_hex_instance.restype = HexInstance
 
 lib_hexp.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
-lib_hexp.read_next_packet.restype = ctypes.POINTER(protocols.ProtocolNode)
+lib_hexp.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
 
 lib_hexp.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
 lib_hexp.free_hex_instance.restype = None
@@ -38,7 +38,7 @@ lib_hexp.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctyp
 lib_hexp.free_interfaces_names.restype = None
 
 # free the packet
-lib_hexp.free_packet.argtypes = [ctypes.POINTER(protocols.ProtocolNode)]
+lib_hexp.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
 lib_hexp.free_packet.restype = None
 
 

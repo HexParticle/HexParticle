@@ -3,9 +3,11 @@
 
 import PyQt6.QtWidgets as widgets
 
+from hexlib.protocol import ip
+
 class IPV4DissectorComponent:
     @staticmethod
-    def dissect(parent_node, ip_header, _previous_node = None):
+    def dissect(parent_node, ip_header: ip.IPV4Header, _previous_node = None):
         flags = ip_header.flags_off >> 13
         offset = ip_header.flags_off & 0x1FFF
 

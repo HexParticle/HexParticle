@@ -3,11 +3,12 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hexlib import ip, ipv6_to_str
+from hexlib.protocol import ip
+from hexlib import ipv6_to_str
 
 class IPV6DissectorComponent:
     @staticmethod
-    def dissect(parent_node, ip_header, previous_node = None):
+    def dissect(parent_node, ip_header: ip.IPV6Header, previous_node = None):
         ver = ip_header.ver_tc_fl >> 28
         tc = (ip_header.ver_tc_fl >>  20) & 0xFF
         fl = ip_header.ver_tc_fl & 0x14

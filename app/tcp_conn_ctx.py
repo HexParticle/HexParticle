@@ -3,14 +3,14 @@
 
 import typing
 
-import hexlib.protocols as proto
+from hexlib.protocol import tcp, ip
 
 class TCPConnectionCtx:
     def __init__(self):
         self.__conns: typing.Dict[tuple, typing.List] = {}
 
     
-    def manage_tcp_packet(self, ip: proto.IPV4Header, tcp: proto.TCPHeader):
+    def manage_tcp_packet(self, ip: ip.IPV4Header, tcp: tcp.TCPHeader):
         src_host = '.'.join(str(b) for b in ip.src)
         src_port = int(tcp.sport)
 

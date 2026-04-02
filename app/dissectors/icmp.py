@@ -3,11 +3,11 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hexlib import protocols as proto, icmp
+from hexlib.protocol import icmp
 
 class ICMPDissectorComponent:
     @staticmethod
-    def dissect(parent_node, icmp_header, previous_node = None):
+    def dissect(parent_node, icmp_header: icmp.ICMPHeader, previous_node = None):
         """Adds ICMP details to the tree."""
         icmp_item = widgets.QTreeWidgetItem(parent_node, [f"Internet Control Message Protocol"])
 

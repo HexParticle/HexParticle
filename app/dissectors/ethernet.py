@@ -3,16 +3,17 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hexlib import protocols as proto, mac_to_str
+from hexlib.protocol import ether
+from hexlib import mac_to_str
 
 class EthernetDissectorComponent:
     @staticmethod
-    def dissect(parent_node, ether_header, _previous_node = None):
+    def dissect(parent_node, ether_header: ether.EtherHeader, _previous_node = None):
         src_mac = mac_to_str(ether_header.src_mac)
         dst_mac = mac_to_str(ether_header.dst_mac)
         ether_item = widgets.QTreeWidgetItem(parent_node, [f"Ethernet II, Src: {src_mac}, Dst: {dst_mac}"])
 
-        proto_name = proto.ETHER_TYPE_NAMES.get(ether_header.type)
+        proto_name = ether.ETHER_TYPE_NAMES.get(ether_header.type)
         widgets.QTreeWidgetItem(ether_item, ["Source Address", src_mac])
         widgets.QTreeWidgetItem(ether_item, ["Destination Address", dst_mac])
         widgets.QTreeWidgetItem(ether_item, ["Type", str(proto_name)])
@@ -25,7 +26,7 @@ class EthernetDissectorComponent:
         return ether_item
 
     @staticmethod
-    def dissect_vlan_tags(parent_node, ether_header):
+    def dissect_vlan_tags(parent_node, ether_header: ether.EtherHeader):
         vlan_item = widgets.QTreeWidgetItem(parent_node, ["802.1Q Virtual LAN"])
 
         for vlan_tag in ether_header.vlans:

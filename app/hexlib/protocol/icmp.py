@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
+import ctypes
+
 class ICMP:
     class Type:
         ECHOREPLY 	= 0
@@ -58,3 +60,41 @@ ICMP_MEANING = {
 
 def icmp_meaning(type_, code):
     return ICMP_MEANING.get((type_, code), None)
+
+
+# ICMP-related classes
+class ICMPEcho(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("id", ctypes.c_uint16),
+        ("seq", ctypes.c_uint16),
+    ]
+
+
+class ICMPFrag(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("unused", ctypes.c_uint16),
+        ("mtu", ctypes.c_uint16),
+    ]
+
+
+class ICMPRest(ctypes.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("echo", ICMPEcho),
+        ("gateway", ctypes.c_uint32),
+        ("frag", ICMPFrag),
+        ("raw", ctypes.c_uint32),
+    ]
+
+
+class ICMPHeader(ctypes.Structure):
+    """Maps to ICMPHeader_t. Represents the standard ICMP segment header."""
+    _pack_ = 1
+    _fields_ = [
+        ("type", 		ctypes.c_uint8),
+        ("code", 		ctypes.c_uint8),
+        ("cksum", 		ctypes.c_uint16),
+        ("rest",		ICMPRest)
+    ]
