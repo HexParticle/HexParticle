@@ -3,7 +3,7 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hex import protocols as protos, icmp
+from hexlib import protocols as proto, icmp
 
 class ICMPDissectorComponent:
     @staticmethod

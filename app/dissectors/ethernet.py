@@ -3,7 +3,7 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hex import protocols as protos, mac_to_str
+from hexlib import protocols as proto, mac_to_str
 
 class EthernetDissectorComponent:
     @staticmethod
@@ -12,7 +12,7 @@ class EthernetDissectorComponent:
         dst_mac = mac_to_str(ether_header.dst_mac)
         ether_item = widgets.QTreeWidgetItem(parent_node, [f"Ethernet II, Src: {src_mac}, Dst: {dst_mac}"])
 
-        proto_name = protos.ETHER_TYPE_NAMES.get(ether_header.type)
+        proto_name = proto.ETHER_TYPE_NAMES.get(ether_header.type)
         widgets.QTreeWidgetItem(ether_item, ["Source Address", src_mac])
         widgets.QTreeWidgetItem(ether_item, ["Destination Address", dst_mac])
         widgets.QTreeWidgetItem(ether_item, ["Type", str(proto_name)])

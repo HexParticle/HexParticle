@@ -5,7 +5,7 @@ import PyQt6.QtWidgets as widgets
 from PyQt6 import QtCore
 
 # hexp
-from hex.protocols import TCPHeader, tcp
+from hexlib.protocols import TCPHeader, tcp
 
 import typing
 

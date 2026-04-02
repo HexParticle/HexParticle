@@ -3,16 +3,16 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hex import protocols as protos
+from hexlib import protocols as proto
 
 class ARPDissectorComponent:
     @staticmethod
     def dissect(parent_node, arp_header, _previous_node = None):
         """Adds ARP details to the tree."""
-        arp_type = "Reply" if arp_header.op == protos.ARP_RESPONSE else "Request"
+        arp_type = "Reply" if arp_header.op == proto.ARP_RESPONSE else "Request"
         arp_item = widgets.QTreeWidgetItem(parent_node, [f"Address Resolution Protocol ({arp_type})"])
 
-        proto_name = protos.ETHER_TYPE_NAMES.get(arp_header.ptype)
+        proto_name = proto.ETHER_TYPE_NAMES.get(arp_header.ptype)
 
         widgets.QTreeWidgetItem(arp_item, ["Hardware Type", str(arp_header.htype)])
         widgets.QTreeWidgetItem(arp_item, ["Protocol Type", str(proto_name) + f" ({hex(arp_header.ptype)})"])

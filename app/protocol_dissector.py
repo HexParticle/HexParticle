@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 # hexp
-from hex import protocols as protos
-from hex.packet import DissectedPacket
+from hexlib import protocols as proto
+from hexlib.packet import DissectedPacket
 
 import dissectors
 import tcp_conn_ctx as tcpcon
@@ -41,13 +41,13 @@ class ProtocolDissector(widgets.QWidget):
         self.layout.addWidget(self.tree)
 
         self.dissection_handlers = {
-            protos.TCPHeader:       dissectors.TCPDissectorComponent.dissect,
-            protos.IPV4Header:      dissectors.IPV4DissectorComponent.dissect,
-            protos.ARPHeader:       dissectors.ARPDissectorComponent.dissect,
-            protos.EtherHeader:     dissectors.EthernetDissectorComponent.dissect,
-            protos.UDPHeader:       dissectors.UDPDissectorComponent.dissect,
-            protos.IPV6Header:      dissectors.IPV6DissectorComponent.dissect,
-            protos.ICMPHeader:      dissectors.ICMPDissectorComponent.dissect,
+            proto.TCPHeader:       dissectors.TCPDissectorComponent.dissect,
+            proto.IPV4Header:      dissectors.IPV4DissectorComponent.dissect,
+            proto.ARPHeader:       dissectors.ARPDissectorComponent.dissect,
+            proto.EtherHeader:     dissectors.EthernetDissectorComponent.dissect,
+            proto.UDPHeader:       dissectors.UDPDissectorComponent.dissect,
+            proto.IPV6Header:      dissectors.IPV6DissectorComponent.dissect,
+            proto.ICMPHeader:      dissectors.ICMPDissectorComponent.dissect,
         }
 
 
@@ -60,10 +60,10 @@ class ProtocolDissector(widgets.QWidget):
         __layer_ip_packet = None
          
         for layer in dissected_pack:
-            if isinstance(layer, protos.IPV4Header):
+            if isinstance(layer, proto.IPV4Header):
                 __layer_ip_packet = layer
 
-            if __layer_ip_packet is not None and isinstance(layer, protos.TCPHeader): # trace only ipv4
+            if __layer_ip_packet is not None and isinstance(layer, proto.TCPHeader): # trace only ipv4
                 self.current_session_key = self.tcp_conns.manage_tcp_packet(__layer_ip_packet, layer)
                 self.session_btn.setEnabled(True)
 
@@ -78,7 +78,7 @@ class ProtocolDissector(widgets.QWidget):
             self.display_tcp_session_window(session_data)
 
 
-    def display_tcp_session_window(self, session: typing.List[protos.TCPHeader]):
+    def display_tcp_session_window(self, session: typing.List[proto.TCPHeader]):
         window = dissectors.TCPSessionAssemblyWindow(session)
         self.session_windows.append(window)
         window.show()

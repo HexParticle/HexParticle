@@ -3,7 +3,7 @@
 
 import PyQt6.QtWidgets as widgets
 
-from hex import ip, protocols as protos, ipv6_to_str
+from hexlib import ip, ipv6_to_str
 
 class IPV6DissectorComponent:
     @staticmethod

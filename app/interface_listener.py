@@ -8,9 +8,9 @@ from PyQt6.QtCore import QThread, pyqtSignal
 import PyQt6.QtWidgets as pyqtw
 from  PyQt6 import QtCore
 
-from hex.lib_wrapper import HexParticle
-from hex.packet import DissectedPacket
-from hex import protocols as protos, ipv6_to_str, ip_to_str, mac_to_str, ip, icmp
+from hexlib.lib_wrapper import HexParticle
+from hexlib.packet import DissectedPacket
+from hexlib import protocols as proto, ipv6_to_str, ip_to_str, mac_to_str, ip, icmp
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
 import tcp_conn_ctx as tcpcon
@@ -144,11 +144,11 @@ class InterfaceListener(QWidget):
     def construct_row(self, dp: DissectedPacket):
         net_layer_pack = dp._layers[1]
 
-        if isinstance(net_layer_pack, protos.IPV4Header):
+        if isinstance(net_layer_pack, proto.IPV4Header):
             self.construct_ipv4_row(dp)
-        elif isinstance(net_layer_pack, protos.IPV6Header):
+        elif isinstance(net_layer_pack, proto.IPV6Header):
             self.construct_ipv6_row(dp)
-        elif isinstance(net_layer_pack, protos.ARPHeader):
+        elif isinstance(net_layer_pack, proto.ARPHeader):
             self.construct_arp_row(dp)
         
     
@@ -157,19 +157,19 @@ class InterfaceListener(QWidget):
             raise RowConstructionError("Layer count must be at least 3!")
         
         transport_layer_pack = dp._layers[2]
-        if isinstance(transport_layer_pack, protos.ICMPHeader):
+        if isinstance(transport_layer_pack, proto.ICMPHeader):
             return self.construct_icmp_row(dp)
-        elif isinstance(transport_layer_pack, protos.TCPHeader):
+        elif isinstance(transport_layer_pack, proto.TCPHeader):
             return self.construct_tcp_row(dp)
-        elif isinstance(transport_layer_pack, protos.UDPHeader):
+        elif isinstance(transport_layer_pack, proto.UDPHeader):
             return self.construct_udp_row(dp)
 
     
     def construct_tcp_row(self, dissected_pack: DissectedPacket):
         iph = dissected_pack._layers[1]
-        tcph: protos.TCPHeader = dissected_pack._layers[2]
+        tcph: proto.TCPHeader = dissected_pack._layers[2]
         
-        if isinstance(iph, protos.IPV4Header):
+        if isinstance(iph, proto.IPV4Header):
             src_ip = ip_to_str(iph.src)
             dst_ip = ip_to_str(iph.dst)
         else:
@@ -190,9 +190,9 @@ class InterfaceListener(QWidget):
     
     def construct_udp_row(self, dissected_pack: DissectedPacket):
         iph = dissected_pack._layers[1]
-        udph: protos.TCPHeader = dissected_pack._layers[2]
+        udph: proto.TCPHeader = dissected_pack._layers[2]
 
-        if isinstance(iph, protos.IPV4Header):
+        if isinstance(iph, proto.IPV4Header):
             src_ip = ip_to_str(iph.src)
             dst_ip = ip_to_str(iph.dst)
         else:
@@ -208,8 +208,8 @@ class InterfaceListener(QWidget):
 
     
     def construct_icmp_row(self, dissected_pack: DissectedPacket):
-        iph: protos.IPV4Header = dissected_pack._layers[1]
-        icmph: protos.ICMPHeader = dissected_pack._layers[2]
+        iph: proto.IPV4Header = dissected_pack._layers[1]
+        icmph: proto.ICMPHeader = dissected_pack._layers[2]
 
         src_ip = ip_to_str(iph.src)
         dst_ip = ip_to_str(iph.dst)
@@ -228,11 +228,11 @@ class InterfaceListener(QWidget):
             return
 
         transport_layer_pack = dissected_pack._layers[2]
-        if isinstance(transport_layer_pack, protos.ICMPHeader):
+        if isinstance(transport_layer_pack, proto.ICMPHeader):
             return self.construct_icmp_row(dissected_pack)
-        elif isinstance(transport_layer_pack, protos.TCPHeader):
+        elif isinstance(transport_layer_pack, proto.TCPHeader):
             return self.construct_tcp_row(dissected_pack)
-        elif isinstance(transport_layer_pack, protos.UDPHeader):
+        elif isinstance(transport_layer_pack, proto.UDPHeader):
             return self.construct_udp_row(dissected_pack)
 
     
@@ -247,9 +247,9 @@ class InterfaceListener(QWidget):
         
         info = "ARP Packet"
         
-        if arp.op == protos.ARP_REQUEST:
+        if arp.op == proto.ARP_REQUEST:
             info = f"Who has {dst_ip}? Tell {src_ip} ({src_mac})"
-        elif arp.op == protos.ARP_RESPONSE:
+        elif arp.op == proto.ARP_RESPONSE:
             info = f"{src_ip} is at {src_mac}"
 
         self.add_packet_row(src_mac, dst_mac, "ARP", dissected_pack.length, info, dissected_pack)
