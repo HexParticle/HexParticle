@@ -1,16 +1,18 @@
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2023 Kagati Foundation <https://kagatifoundation.github.org>
+# SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel)
-from hexlib.lib_wrapper import InterfaceManager
+
 from interface_listener import InterfaceListener
+import app_ctx
 import style_loader
 
 class InterfacePicker(QWidget):
-    def __init__(self):
+    def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
         self.init_ui()
         self.active_listeners = []
+        self._ctx = ctx
 
 
     def init_ui(self):
@@ -37,12 +39,9 @@ class InterfacePicker(QWidget):
 
     def load_interfaces(self):
         try:
-            manager = InterfaceManager()
-            if_names = manager.get_all_interface_names()
-            
+            if_names = self._ctx._lib.get_all_interfaces()
             self.interface_list.addItems(if_names)
             self.interface_list.itemDoubleClicked.connect(self.handle_interface_selection)
-
         except Exception as e:
             self.interface_list.addItem(f"Error: {e}")
 
@@ -54,7 +53,7 @@ class InterfacePicker(QWidget):
             self.active_listeners = []
 
         interface_name = item.text()
-        if_listener = InterfaceListener(interface=interface_name)
+        if_listener = InterfaceListener(interface=interface_name, ctx=self._ctx)
         
         self.active_listeners.append(if_listener)
         if_listener.show()

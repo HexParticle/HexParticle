@@ -14,18 +14,19 @@ from hexlib.packet import DissectedPacket
 from hexlib import ipv6_to_str, ip_to_str, mac_to_str
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
-import tcp_conn_ctx as tcpcon
 
+import app_ctx
+import tcp_conn_ctx as tcpcon
 import style_loader
 
 class HexParticleWorker(QThread):
     packet_received = pyqtSignal(DissectedPacket)
 
-    def __init__(self, interface):
+    def __init__(self, interface: str, lib_path: str):
         super().__init__()
         self.interface = interface
         self.running = True
-        self.hexp = HexParticle(interface)
+        self.hexp = HexParticle(interface, lib_path)
 
 
     def run(self):
@@ -44,13 +45,14 @@ class HexParticleWorker(QThread):
 
 
 class InterfaceListener(QWidget):
-    def __init__(self, interface: str):
+    def __init__(self, interface: str, ctx: app_ctx.AppContext):
         super().__init__()
         self.worker = None
         self.interface = interface
         self.packets = []
+        self._ctx = ctx
 
-		# the most recent packet
+        # the most recent packet
         self.most_recent_packet: DissectedPacket = None
 
         # the currently selected packet
@@ -67,7 +69,6 @@ class InterfaceListener(QWidget):
     def init_ui(self):
         self.setWindowTitle("HexParticle Sniffer")
         self.resize(1000, 600)
-        # self.showFullScreen()
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
         layout = QVBoxLayout(self)
@@ -130,7 +131,9 @@ class InterfaceListener(QWidget):
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
-        self.worker = HexParticleWorker(self.interface)
+        lib_path = self._ctx.cmdline_options.get('--lib-path')
+        self.worker = HexParticleWorker(self.interface, lib_path)
+
         self.worker.packet_received.connect(self.process_incoming_packet)
         self.worker.start()
 

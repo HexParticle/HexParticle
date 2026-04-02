@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 import ctypes
+import typing
 
 from hexlib import ProtocolNode
 from hexlib.packet import DissectedPacket
@@ -12,47 +13,60 @@ class HexInstance(ctypes.Structure):
     ]
 
 
-lib_hexp = ctypes.CDLL("/usr/local/lib/HexParticle/libhexp.so")
-if lib_hexp is None:
-    raise RuntimeError("libhexp not found")
+class HexParticleLib:
+    """Python wrapper for libhexp.so"""
 
-'''
-These functions are for capturing and managing packets
-'''
-lib_hexp.create_hex_instance.argtypes = [ctypes.c_char_p]
-lib_hexp.create_hex_instance.restype = HexInstance
+    def __init__(self, lib_path: str = "/usr/local/lib/HexParticle/libhexp.so"):
+        self.lib = ctypes.CDLL(lib_path)
+        if self.lib is None:
+            raise RuntimeError(f"Failed to load {lib_path}")
 
-lib_hexp.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
-lib_hexp.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
+        # Packet management
+        self.lib.create_hex_instance.argtypes = [ctypes.c_char_p]
+        self.lib.create_hex_instance.restype = HexInstance
 
-lib_hexp.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
-lib_hexp.free_hex_instance.restype = None
+        self.lib.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
+        self.lib.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
 
-'''
-Interface related functions
-'''
-lib_hexp.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
-lib_hexp.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
+        self.lib.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
+        self.lib.free_hex_instance.restype = None
 
-lib_hexp.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
-lib_hexp.free_interfaces_names.restype = None
+        self.lib.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
+        self.lib.free_packet.restype = None
 
-# free the packet
-lib_hexp.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
-lib_hexp.free_packet.restype = None
+        # Interface management
+        self.lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
+        self.lib.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
 
-
-class InterfaceManager:
-    def get_all_interface_names(self):
-        self.count = ctypes.c_int()
-        self.interfaces = lib_hexp.get_all_interfaces_names(ctypes.byref(self.count))
-        if not self.interfaces:
-            raise RuntimeError(f"Failed to get interface names")
-        return [self.interfaces[i].decode("UTF-8") for i in range(self.count.value)]
+        self.lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
+        self.lib.free_interfaces_names.restype = None
 
 
-    def __del__(self):
-        lib_hexp.free_interfaces_names(self.interfaces, self.count)
+    def create_instance(self, iface_name: str) -> HexInstance:
+        return self.lib.create_hex_instance(iface_name.encode("utf-8"))
+
+
+    def read_next_packet(self, instance: HexInstance) -> typing.Optional[ProtocolNode]:
+        ptr = self.lib.read_next_packet(ctypes.byref(instance))
+        if not ptr:
+            return None
+        return ptr.contents
+
+
+    def free_instance(self, instance: HexInstance):
+        self.lib.free_hex_instance(ctypes.byref(instance))
+
+
+    def get_all_interfaces(self) -> typing.List[str]:
+        count = ctypes.c_int()
+        names_ptr = self.lib.get_all_interfaces_names(ctypes.byref(count))
+        names = [names_ptr[i].decode("utf-8") for i in range(count.value)]
+        self.lib.free_interfaces_names(names_ptr, count)
+        return names
+
+
+    def free_packet(self, packet: ProtocolNode):
+        self.lib.free_packet(ctypes.byref(packet))
 
 
 class HexParticle():
@@ -60,44 +74,39 @@ class HexParticle():
     A high-level packet sniffing interface for the HexParticle C library.
     """
 
-    def __init__(self, device: str):
+    def __init__(self, device: str, lib_path: str = "/usr/local/lib/HexParticle/libhexp.so"):
         """
         Initializes the sniffer on the specified network interface.
 
         Args:
             device (str): Name of the network interface (e.g., 'eth0', 'wlan0').
         """
-        self.handle: HexInstance = lib_hexp.create_hex_instance(device.encode('utf-8'))
-        if not self.handle:
+        self._lib = HexParticleLib(lib_path)
+        self._instance = self._lib.create_instance(device)
+        if not self._instance:
             raise RuntimeError(f"Failed to open device {device}")
 
 
     def next_packet(self) -> DissectedPacket:
-        node_ptr = lib_hexp.read_next_packet(self.handle)
+        node_ptr = self._instance.read_next_packet(self._instance)
         if not node_ptr:
             return None
 
-        pwrapper = None
+        pwrapper: DissectedPacket = None
     
         try:
             pwrapper = DissectedPacket(node_ptr)
         finally:
-            lib_hexp.free_packet(node_ptr)
+            self._lib.free_packet(node_ptr)
 
         return pwrapper
 
 
     def close(self):
         if self.handle:
-            lib_hexp.free_hex_instance(self.handle)
-            self.handle = None
+            self._lib.free_instance(self._instance)
+            self._instance = None
 
 
     def __del__(self):
         self.close()
-
-
-if __name__ == "__main__":
-    hex = HexParticle("en0")
-    while True:
-        packet = hex.next_packet()
