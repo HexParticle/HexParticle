@@ -131,7 +131,7 @@ class InterfaceListener(QWidget):
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         
-        lib_path = self._ctx.cmdline_options.get('--lib-path')
+        lib_path = self._ctx.cmdline_options.lib_path
         self.worker = HexParticleWorker(self.interface, lib_path)
 
         self.worker.packet_received.connect(self.process_incoming_packet)

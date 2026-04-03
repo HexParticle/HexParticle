@@ -10,9 +10,9 @@ import style_loader
 class InterfacePicker(QWidget):
     def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
-        self.init_ui()
-        self.active_listeners = []
         self._ctx = ctx
+        self.active_listeners = []
+        self.init_ui()
 
 
     def init_ui(self):

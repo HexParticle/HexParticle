@@ -12,11 +12,12 @@ from interface_picker_widget import InterfacePicker
 
 class HexParticleApplication:
     def __init__(self, ctx: AppContext):
-        self._pyqt_app = QApplication(sys.argv)
-        interface_picker = InterfacePicker(ctx)
-        interface_picker.show()
+        self._ctx = ctx
 
     def start(self):
+        self._pyqt_app = QApplication(sys.argv)
+        interface_picker = InterfacePicker(self._ctx)
+        interface_picker.show()
         sys.exit(self._pyqt_app.exec())
 
 

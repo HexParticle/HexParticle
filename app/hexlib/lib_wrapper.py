@@ -3,6 +3,7 @@
 
 import ctypes
 import typing
+import os
 
 from hexlib import ProtocolNode
 from hexlib.packet import DissectedPacket
@@ -16,45 +17,64 @@ class HexInstance(ctypes.Structure):
 class HexParticleLib:
     """Python wrapper for libhexp.so"""
 
-    def __init__(self, lib_path: str = "/usr/local/lib/HexParticle/libhexp.so"):
-        self.lib = ctypes.CDLL(lib_path)
-        if self.lib is None:
-            raise RuntimeError(f"Failed to load {lib_path}")
+    def __init__(self, lib_path: str = None):
+        self.effective_lib_path = lib_path or "/usr/local/lib/HexParticle/libhexp.so"
+        abs_path = os.path.abspath(self.effective_lib_path)
+
+        if not os.path.exists(abs_path):
+            raise FileNotFoundError(f"Could not find library at {abs_path}")
+        
+        try:
+            lib = ctypes.CDLL(abs_path, mode=ctypes.RTLD_GLOBAL)
+        except OSError as e:
+            raise RuntimeError(f"Failed to load {abs_path}: {e}")
+        
+        print("[*] libhexp loaded")
 
         # Packet management
-        self.lib.create_hex_instance.argtypes = [ctypes.c_char_p]
-        self.lib.create_hex_instance.restype = HexInstance
+        lib.create_hex_instance.argtypes = [ctypes.c_char_p]
+        lib.create_hex_instance.restype = HexInstance
 
-        self.lib.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
-        self.lib.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
+        lib.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
+        lib.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
 
-        self.lib.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
-        self.lib.free_hex_instance.restype = None
+        lib.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
+        lib.free_hex_instance.restype = None
 
-        self.lib.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
-        self.lib.free_packet.restype = None
+        lib.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
+        lib.free_packet.restype = None
 
         # Interface management
-        self.lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
-        self.lib.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
+        lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
+        lib.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
 
-        self.lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
-        self.lib.free_interfaces_names.restype = None
+        lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
+        lib.free_interfaces_names.restype = None
+
+        self.lib = lib
 
 
     def create_instance(self, iface_name: str) -> HexInstance:
         return self.lib.create_hex_instance(iface_name.encode("utf-8"))
 
 
-    def read_next_packet(self, instance: HexInstance) -> typing.Optional[ProtocolNode]:
-        ptr = self.lib.read_next_packet(ctypes.byref(instance))
-        if not ptr:
+    def read_next_packet(self, instance: HexInstance) -> typing.Optional[DissectedPacket]:
+        node_ptr = self.lib.read_next_packet(instance)
+        if not node_ptr:
             return None
-        return ptr.contents
+
+        pwrapper = None
+    
+        try:
+            pwrapper = DissectedPacket(node_ptr)
+        finally:
+            self.lib.free_packet(node_ptr)
+
+        return pwrapper
 
 
     def free_instance(self, instance: HexInstance):
-        self.lib.free_hex_instance(ctypes.byref(instance))
+        self.lib.free_hex_instance(instance)
 
 
     def get_all_interfaces(self) -> typing.List[str]:
@@ -63,10 +83,6 @@ class HexParticleLib:
         names = [names_ptr[i].decode("utf-8") for i in range(count.value)]
         self.lib.free_interfaces_names(names_ptr, count)
         return names
-
-
-    def free_packet(self, packet: ProtocolNode):
-        self.lib.free_packet(ctypes.byref(packet))
 
 
 class HexParticle():
@@ -87,23 +103,12 @@ class HexParticle():
             raise RuntimeError(f"Failed to open device {device}")
 
 
-    def next_packet(self) -> DissectedPacket:
-        node_ptr = self._instance.read_next_packet(self._instance)
-        if not node_ptr:
-            return None
-
-        pwrapper: DissectedPacket = None
-    
-        try:
-            pwrapper = DissectedPacket(node_ptr)
-        finally:
-            self._lib.free_packet(node_ptr)
-
-        return pwrapper
+    def next_packet(self) -> typing.Optional[DissectedPacket]:
+        return self._lib.read_next_packet(self._instance)
 
 
     def close(self):
-        if self.handle:
+        if self._instance:
             self._lib.free_instance(self._instance)
             self._instance = None
 
