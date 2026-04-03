@@ -1,20 +1,18 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
-                                    QTableWidget, QTableWidgetItem, QPushButton, QMenu)
 from PyQt6.QtCore import QThread, pyqtSignal
 
-import PyQt6.QtWidgets as pyqtw
-from  PyQt6 import QtCore
+import PyQt6.QtWidgets as widgets
+from  PyQt6 import QtCore, QtGui
 
 from hexlib.protocol import icmp, ip, arp, tcp, udp
 from hexlib.lib_wrapper import HexParticle
 from hexlib.packet import DissectedPacket
-from hexlib import ipv6_to_str, ip_to_str, mac_to_str
 from protocol_dissector import ProtocolDissector
 from dissectors import HexViewer
 
+import hexlib
 import app_ctx
 import tcp_conn_ctx as tcpcon
 import style_loader
@@ -37,14 +35,14 @@ class HexParticleWorker(QThread):
                     self.packet_received.emit(packet)
             self.hexp.close()
         except Exception as e:
-            print(f"Worker Error: {e}")
+            print(e)
 
 
     def stop(self):
         self.running = False
 
 
-class InterfaceListener(QWidget):
+class InterfaceListener(widgets.QMainWindow):
     def __init__(self, interface: str, ctx: app_ctx.AppContext):
         super().__init__()
         self.worker = None
@@ -71,16 +69,29 @@ class InterfaceListener(QWidget):
         self.resize(1000, 600)
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
-        layout = QVBoxLayout(self)
+        self.toolbar = widgets.QToolBar("Main Toolbar")
+        self.addToolBar(self.toolbar)
+
+        self.start_action = QtGui.QAction(QtGui.QIcon("../assets/play.png"), "Start", self)
+        self.start_action.triggered.connect(self.start_sniffing)
+        self.toolbar.addAction(self.start_action)
+
+        self.stop_action = QtGui.QAction(QtGui.QIcon("../assets/stop.png"), "Stop", self)
+        self.stop_action.triggered.connect(self.stop_sniffing)
+        self.stop_action.setEnabled(False)
+        self.toolbar.addAction(self.stop_action)
+
+        container = widgets.QWidget()
+        layout = widgets.QVBoxLayout(container)
         
-        self.search_bar = pyqtw.QLineEdit()
+        self.search_bar = widgets.QLineEdit()
         self.search_bar.setPlaceholderText("Filter by Protocol or IP (e.g., TCP, 192.168...)")
         self.search_bar.textChanged.connect(self.filter_table)
         layout.addWidget(self.search_bar)
         
-        self.main_splitter = pyqtw.QSplitter(QtCore.Qt.Orientation.Vertical)
+        self.main_splitter = widgets.QSplitter(QtCore.Qt.Orientation.Vertical)
 
-        self.packet_table = QTableWidget()
+        self.packet_table = widgets.QTableWidget()
         self.packet_table.setColumnCount(5)
         self.packet_table.setHorizontalHeaderLabels(
             ["Source", "Destination", "Protocol", "Length", "Info"]
@@ -96,7 +107,7 @@ class InterfaceListener(QWidget):
         self.dissector = ProtocolDissector()
         self.hex_viewer = HexViewer()
         
-        self.bottom_splitter = pyqtw.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self.bottom_splitter = widgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.bottom_splitter.addWidget(self.dissector)
         self.bottom_splitter.addWidget(self.hex_viewer)
         
@@ -106,19 +117,7 @@ class InterfaceListener(QWidget):
         self.bottom_splitter.setStretchFactor(1, 1)
 
         layout.addWidget(self.main_splitter)
-
-        ctrl_layout = QHBoxLayout()
-        self.start_btn = QPushButton("Start")
-        self.stop_btn = QPushButton("Stop")
-        self.stop_btn.setEnabled(False)
-        
-        self.start_btn.clicked.connect(self.start_sniffing)
-        self.stop_btn.clicked.connect(self.stop_sniffing)
-        
-        ctrl_layout.addWidget(self.start_btn)
-        ctrl_layout.addWidget(self.stop_btn)
-
-        layout.addLayout(ctrl_layout)
+        self.setCentralWidget(container)
 
     
     def filter_table(self, filters):
@@ -128,8 +127,8 @@ class InterfaceListener(QWidget):
     def start_sniffing(self):
         if not self.interface: return
 
-        self.start_btn.setEnabled(False)
-        self.stop_btn.setEnabled(True)
+        self.start_action.setEnabled(False)
+        self.stop_action.setEnabled(True)
         
         lib_path = self._ctx.cmdline_options.lib_path
         self.worker = HexParticleWorker(self.interface, lib_path)
@@ -175,11 +174,11 @@ class InterfaceListener(QWidget):
         tcph: tcp.TCPHeader = dissected_pack._layers[2]
         
         if isinstance(iph, ip.IPV4Header):
-            src_ip = ip_to_str(iph.src)
-            dst_ip = ip_to_str(iph.dst)
+            src_ip = hexlib.ip_to_str(iph.src)
+            dst_ip = hexlib.ip_to_str(iph.dst)
         else:
-            src_ip = ipv6_to_str(iph.src)
-            dst_ip = ipv6_to_str(iph.dst)
+            src_ip = hexlib.ipv6_to_str(iph.src)
+            dst_ip = hexlib.ipv6_to_str(iph.dst)
 
         self.current_session_key = self.tcp_conns.manage_tcp_packet(iph, tcph)
 
@@ -198,11 +197,11 @@ class InterfaceListener(QWidget):
         udph: tcp.TCPHeader = dissected_pack._layers[2]
 
         if isinstance(iph, ip.IPV4Header):
-            src_ip = ip_to_str(iph.src)
-            dst_ip = ip_to_str(iph.dst)
+            src_ip = hexlib.ip_to_str(iph.src)
+            dst_ip = hexlib.ip_to_str(iph.dst)
         else:
-            src_ip = ipv6_to_str(iph.src)
-            dst_ip = ipv6_to_str(iph.dst)
+            src_ip = hexlib.ipv6_to_str(iph.src)
+            dst_ip = hexlib.ipv6_to_str(iph.dst)
 
         src_port = udph.sport
         dst_port = udph.dport
@@ -216,8 +215,8 @@ class InterfaceListener(QWidget):
         iph: ip.IPV4Header = dissected_pack._layers[1]
         icmph: icmp.ICMPHeader = dissected_pack._layers[2]
 
-        src_ip = ip_to_str(iph.src)
-        dst_ip = ip_to_str(iph.dst)
+        src_ip = hexlib.ip_to_str(iph.src)
+        dst_ip = hexlib.ip_to_str(iph.dst)
 
         type_ = icmph.type
         info = icmp.icmp_type_meaning(type_)
@@ -244,11 +243,11 @@ class InterfaceListener(QWidget):
     def construct_arp_row(self, dissected_pack: DissectedPacket):
         arp_layer = dissected_pack._layers[1]
         
-        src_mac = mac_to_str(arp_layer.sha)
-        dst_mac = mac_to_str(arp_layer.tha)
+        src_mac = hexlib.mac_to_str(arp_layer.sha)
+        dst_mac = hexlib.mac_to_str(arp_layer.tha)
 
-        src_ip = ip_to_str(arp_layer.spa)
-        dst_ip = ip_to_str(arp_layer.tpa)
+        src_ip = hexlib.ip_to_str(arp_layer.spa)
+        dst_ip = hexlib.ip_to_str(arp_layer.tpa)
         
         info = "ARP Packet"
         
@@ -266,17 +265,17 @@ class InterfaceListener(QWidget):
 
         self.packets.append(dissected_pack)
 
-        src_item = QTableWidgetItem(str(src))
+        src_item = widgets.QTableWidgetItem(str(src))
         src_item.setData(QtCore.Qt.ItemDataRole.UserRole, len(self.packets) - 1)
         
         self.packet_table.setItem(row, 0, src_item)
-        self.packet_table.setItem(row, 1, QTableWidgetItem(str(dst)))
+        self.packet_table.setItem(row, 1, widgets.QTableWidgetItem(str(dst)))
 
-        self.packet_table.setItem(row, 0, QTableWidgetItem(str(src)))
-        self.packet_table.setItem(row, 1, QTableWidgetItem(str(dst)))
-        self.packet_table.setItem(row, 2, QTableWidgetItem(str(proto)))
-        self.packet_table.setItem(row, 3, QTableWidgetItem(str(length)))
-        self.packet_table.setItem(row, 4, QTableWidgetItem(str(info)))
+        self.packet_table.setItem(row, 0, widgets.QTableWidgetItem(str(src)))
+        self.packet_table.setItem(row, 1, widgets.QTableWidgetItem(str(dst)))
+        self.packet_table.setItem(row, 2, widgets.QTableWidgetItem(str(proto)))
+        self.packet_table.setItem(row, 3, widgets.QTableWidgetItem(str(length)))
+        self.packet_table.setItem(row, 4, widgets.QTableWidgetItem(str(info)))
 
         self.packet_table.scrollToBottom()
 
@@ -295,16 +294,14 @@ class InterfaceListener(QWidget):
         if self.worker:
             self.worker.stop()
             self.worker.wait()
-        self.start_btn.setEnabled(True)
-        self.stop_btn.setEnabled(False)
+        self.start_action.setEnabled(True)
+        self.stop_action.setEnabled(False)
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):
-        menu = QMenu()
+        menu = widgets.QMenu()
         packet = self.packet_table.itemAt(position)
 
-        print(repr(position))
-        
         if packet:
             action_follow = menu.addAction(f"Follow")
             action = menu.exec(self.packet_table.mapToGlobal(position))
