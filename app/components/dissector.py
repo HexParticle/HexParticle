@@ -5,7 +5,7 @@
 from hexlib import protocol as proto
 from hexlib.packet import DissectedPacket
 
-import dissectors
+from components import dissectors
 
 # qt
 import PyQt6.QtWidgets as widgets

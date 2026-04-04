@@ -1,24 +1,20 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
-from PyQt6.QtCore import QThread, pyqtSignal
-
-import PyQt6.QtWidgets as widgets
-from  PyQt6 import QtCore, QtGui
+from  PyQt6 import QtCore, QtGui, QtWidgets
 
 from hexlib.protocol import icmp, ip, arp, tcp, udp
 from hexlib.lib_wrapper import HexParticle
 from hexlib.packet import DissectedPacket
-from protocol_dissector import ProtocolDissector
-from dissectors import HexViewer
+from components import ProtocolDissector, HexViewer
 
 import hexlib
 import app_ctx
 import tcp_conn_ctx as tcpcon
 import style_loader
 
-class HexParticleWorker(QThread):
-    packet_received = pyqtSignal(DissectedPacket)
+class HexParticleWorker(QtCore.QThread):
+    packet_received = QtCore.pyqtSignal(DissectedPacket)
 
     def __init__(self, interface: str, lib_path: str):
         super().__init__()
@@ -42,7 +38,7 @@ class HexParticleWorker(QThread):
         self.running = False
 
 
-class InterfaceListener(widgets.QMainWindow):
+class InterfaceListener(QtWidgets.QMainWindow):
     def __init__(self, interface: str, ctx: app_ctx.AppContext):
         super().__init__()
         self.worker = None
@@ -69,7 +65,7 @@ class InterfaceListener(widgets.QMainWindow):
         self.resize(1000, 600)
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
-        self.toolbar = widgets.QToolBar("Main Toolbar")
+        self.toolbar = QtWidgets.QToolBar("Main Toolbar")
         self.addToolBar(self.toolbar)
 
         self.start_action = QtGui.QAction(QtGui.QIcon("../assets/play.png"), "Start", self)
@@ -81,17 +77,17 @@ class InterfaceListener(widgets.QMainWindow):
         self.stop_action.setEnabled(False)
         self.toolbar.addAction(self.stop_action)
 
-        container = widgets.QWidget()
-        layout = widgets.QVBoxLayout(container)
+        container = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(container)
         
-        self.search_bar = widgets.QLineEdit()
+        self.search_bar = QtWidgets.QLineEdit()
         self.search_bar.setPlaceholderText("Filter by Protocol or IP (e.g., TCP, 192.168...)")
         self.search_bar.textChanged.connect(self.filter_table)
         layout.addWidget(self.search_bar)
         
-        self.main_splitter = widgets.QSplitter(QtCore.Qt.Orientation.Vertical)
+        self.main_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
 
-        self.packet_table = widgets.QTableWidget()
+        self.packet_table = QtWidgets.QTableWidget()
         self.packet_table.setColumnCount(5)
         self.packet_table.setHorizontalHeaderLabels(
             ["Source", "Destination", "Protocol", "Length", "Info"]
@@ -107,7 +103,7 @@ class InterfaceListener(widgets.QMainWindow):
         self.dissector = ProtocolDissector()
         self.hex_viewer = HexViewer()
         
-        self.bottom_splitter = widgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self.bottom_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.bottom_splitter.addWidget(self.dissector)
         self.bottom_splitter.addWidget(self.hex_viewer)
         
@@ -265,19 +261,16 @@ class InterfaceListener(widgets.QMainWindow):
 
         self.packets.append(dissected_pack)
 
-        src_item = widgets.QTableWidgetItem(str(src))
+        src_item = QtWidgets.QTableWidgetItem(str(src))
         src_item.setData(QtCore.Qt.ItemDataRole.UserRole, len(self.packets) - 1)
         
         self.packet_table.setItem(row, 0, src_item)
-        self.packet_table.setItem(row, 1, widgets.QTableWidgetItem(str(dst)))
-
-        self.packet_table.setItem(row, 0, widgets.QTableWidgetItem(str(src)))
-        self.packet_table.setItem(row, 1, widgets.QTableWidgetItem(str(dst)))
-        self.packet_table.setItem(row, 2, widgets.QTableWidgetItem(str(proto)))
-        self.packet_table.setItem(row, 3, widgets.QTableWidgetItem(str(length)))
-        self.packet_table.setItem(row, 4, widgets.QTableWidgetItem(str(info)))
-
-        self.packet_table.scrollToBottom()
+        self.packet_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(dst)))
+        self.packet_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(src)))
+        self.packet_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(dst)))
+        self.packet_table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(proto)))
+        self.packet_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(length)))
+        self.packet_table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(info)))
 
     
     def on_row_selected(self, item):
@@ -299,7 +292,7 @@ class InterfaceListener(widgets.QMainWindow):
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):
-        menu = widgets.QMenu()
+        menu = QtWidgets.QMenu()
         packet = self.packet_table.itemAt(position)
 
         if packet:
