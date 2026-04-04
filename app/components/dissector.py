@@ -3,7 +3,7 @@
 
 # hexp
 from hexlib import protocol as proto
-from hexlib.packet import DissectedPacket
+from hexlib import ParsedPacket
 
 from components import dissectors
 
@@ -35,7 +35,7 @@ class ProtocolDissector(widgets.QWidget):
         }
 
 
-    def display_packet(self, dissected_pack: DissectedPacket):
+    def display_packet(self, dissected_pack: ParsedPacket):
         self.tree.clear()
         previous_node = None
          

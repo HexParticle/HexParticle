@@ -6,7 +6,7 @@ import typing
 import os
 
 from hexlib import ProtocolNode
-from hexlib.packet import DissectedPacket
+from hexlib import ParsedPacket
 
 class HexInstance(ctypes.Structure):
     _fields_ = [
@@ -58,7 +58,7 @@ class HexParticleLib:
         return self.lib.create_hex_instance(iface_name.encode("utf-8"))
 
 
-    def read_next_packet(self, instance: HexInstance) -> typing.Optional[DissectedPacket]:
+    def read_next_packet(self, instance: HexInstance) -> typing.Optional[ParsedPacket]:
         node_ptr = self.lib.read_next_packet(instance)
         if not node_ptr:
             return None
@@ -66,7 +66,7 @@ class HexParticleLib:
         pwrapper = None
     
         try:
-            pwrapper = DissectedPacket(node_ptr)
+            pwrapper = ParsedPacket(node_ptr)
         finally:
             self.lib.free_packet(node_ptr)
 
@@ -103,7 +103,7 @@ class HexParticle():
             raise RuntimeError(f"Failed to open device {device}")
 
 
-    def next_packet(self) -> typing.Optional[DissectedPacket]:
+    def next_packet(self) -> typing.Optional[ParsedPacket]:
         return self._lib.read_next_packet(self._instance)
 
 

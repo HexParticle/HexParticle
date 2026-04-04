@@ -5,7 +5,7 @@ from  PyQt6 import QtCore, QtGui, QtWidgets
 
 from hexlib.protocol import icmp, ip, arp, tcp, udp
 from hexlib.lib_wrapper import HexParticle
-from hexlib.packet import DissectedPacket
+from hexlib import ParsedPacket
 from components import ProtocolDissector, HexViewer
 
 import hexlib
@@ -14,7 +14,7 @@ import tcp_conn_ctx as tcpcon
 import style_loader
 
 class HexParticleWorker(QtCore.QThread):
-    packet_received = QtCore.pyqtSignal(DissectedPacket)
+    packet_received = QtCore.pyqtSignal(ParsedPacket)
 
     def __init__(self, interface: str, lib_path: str):
         super().__init__()
@@ -47,10 +47,10 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self._ctx = ctx
 
         # the most recent packet
-        self.most_recent_packet: DissectedPacket = None
+        self.most_recent_packet: ParsedPacket = None
 
         # the currently selected packet
-        self.selected_packet: DissectedPacket = None
+        self.selected_packet: ParsedPacket = None
 
         # reassembling TCP segments
         self.tcp_conns: tcpcon.TCPConnectionCtx = tcpcon.TCPConnectionCtx()
@@ -133,7 +133,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.worker.start()
 
 
-    def process_incoming_packet(self, dissected_pack: DissectedPacket):
+    def process_incoming_packet(self, dissected_pack: ParsedPacket):
         if dissected_pack is None or len(dissected_pack._layers) == 0:
             raise RowConstructionError("Layer count must be at least 1")
 
@@ -141,7 +141,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.construct_row(dissected_pack)
 
     
-    def construct_row(self, dp: DissectedPacket):
+    def construct_row(self, dp: ParsedPacket):
         net_layer_pack = dp._layers[1]
 
         if isinstance(net_layer_pack, ip.IPV4Header):
@@ -152,7 +152,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             self.construct_arp_row(dp)
         
     
-    def construct_ipv4_row(self, dp: DissectedPacket):
+    def construct_ipv4_row(self, dp: ParsedPacket):
         if dp.packets_count() < 3:
             raise RowConstructionError("Layer count must be at least 3!")
         
@@ -165,7 +165,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             return self.construct_udp_row(dp)
 
     
-    def construct_tcp_row(self, dissected_pack: DissectedPacket):
+    def construct_tcp_row(self, dissected_pack: ParsedPacket):
         iph = dissected_pack._layers[1]
         tcph: tcp.TCPHeader = dissected_pack._layers[2]
         
@@ -188,7 +188,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.add_packet_row(src_ip, dst_ip, 'TCP', dissected_pack.length, info, dissected_pack)
 
     
-    def construct_udp_row(self, dissected_pack: DissectedPacket):
+    def construct_udp_row(self, dissected_pack: ParsedPacket):
         iph = dissected_pack._layers[1]
         udph: tcp.TCPHeader = dissected_pack._layers[2]
 
@@ -207,7 +207,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.add_packet_row(src_ip, dst_ip, 'UDP', dissected_pack.length, info, dissected_pack)
 
     
-    def construct_icmp_row(self, dissected_pack: DissectedPacket):
+    def construct_icmp_row(self, dissected_pack: ParsedPacket):
         iph: ip.IPV4Header = dissected_pack._layers[1]
         icmph: icmp.ICMPHeader = dissected_pack._layers[2]
 
@@ -220,7 +220,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.add_packet_row(src_ip, dst_ip, 'ICMP', dissected_pack.length, info, dissected_pack)
 
 
-    def construct_ipv6_row(self, dissected_pack: DissectedPacket):
+    def construct_ipv6_row(self, dissected_pack: ParsedPacket):
         if len(dissected_pack._layers) < 3:
             # raise RowConstructionError("Layer count must be at least 3!")
 
@@ -236,7 +236,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             return self.construct_udp_row(dissected_pack)
 
     
-    def construct_arp_row(self, dissected_pack: DissectedPacket):
+    def construct_arp_row(self, dissected_pack: ParsedPacket):
         arp_layer = dissected_pack._layers[1]
         
         src_mac = hexlib.mac_to_str(arp_layer.sha)
@@ -255,7 +255,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.add_packet_row(src_mac, dst_mac, "ARP", dissected_pack.length, info, dissected_pack)
 
 
-    def add_packet_row(self, src: str, dst: str, proto: int, length: int, info: str, dissected_pack: DissectedPacket):
+    def add_packet_row(self, src: str, dst: str, proto: int, length: int, info: str, dissected_pack: ParsedPacket):
         row = self.packet_table.rowCount()
         self.packet_table.insertRow(row)
 
