@@ -8,7 +8,7 @@ import signal
 import argparse
 
 from app_ctx import AppContext
-from interface_picker_widget import InterfacePicker
+from windows import InterfacePickerWindow
 
 class HexParticleApplication:
     def __init__(self, ctx: AppContext):
@@ -16,7 +16,7 @@ class HexParticleApplication:
 
     def start(self):
         self._pyqt_app = QApplication(sys.argv)
-        interface_picker = InterfacePicker(self._ctx)
+        interface_picker = InterfacePickerWindow(self._ctx)
         interface_picker.show()
         sys.exit(self._pyqt_app.exec())
 

@@ -38,7 +38,7 @@ class HexParticleWorker(QtCore.QThread):
         self.running = False
 
 
-class InterfaceListener(QtWidgets.QMainWindow):
+class InterfaceListenerWindow(QtWidgets.QMainWindow):
     def __init__(self, interface: str, ctx: app_ctx.AppContext):
         super().__init__()
         self.worker = None

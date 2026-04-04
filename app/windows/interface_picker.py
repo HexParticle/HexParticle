@@ -3,11 +3,11 @@
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel)
 
-from interface_listener import InterfaceListener
+from windows import InterfaceListenerWindow
 import app_ctx
 import style_loader
 
-class InterfacePicker(QWidget):
+class InterfacePickerWindow(QWidget):
     def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
         self._ctx = ctx
@@ -53,7 +53,7 @@ class InterfacePicker(QWidget):
             self.active_listeners = []
 
         interface_name = item.text()
-        if_listener = InterfaceListener(interface=interface_name, ctx=self._ctx)
+        if_listener = InterfaceListenerWindow(interface=interface_name, ctx=self._ctx)
         
         self.active_listeners.append(if_listener)
         if_listener.show()
