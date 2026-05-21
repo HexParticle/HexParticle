@@ -5,14 +5,14 @@ import ctypes
 import typing
 
 FLAG_MEANING = {
-	1: 		"FIN",
-	2: 		"SYN",
-	4: 		"RST",
-	8: 		"PSH",
-	16: 	"ACK",
-	32: 	"URG",
-	64: 	"ECE",
-	128: 	"CWR"
+    1: 		"FIN",
+    2: 		"SYN",
+    4: 		"RST",
+    8: 		"PSH",
+    16: 	"ACK",
+    32: 	"URG",
+    64: 	"ECE",
+    128: 	"CWR"
 }
 
 TCP_OPTION_NOP = 				0x1
@@ -50,13 +50,13 @@ class TCPHeader(ctypes.Structure):
     _fields_ = [
         ("sport", 	ctypes.c_uint16),    # Source Port
         ("dport", 	ctypes.c_uint16),    # Destination Port
-        ("seq", 	ctypes.c_uint32),      # Sequence Number
-        ("ack", 	ctypes.c_uint32),      # Acknowledgment Number
-        ("off_res", ctypes.c_uint8),   # Data Offset + Reserved bits
+        ("seq", 	ctypes.c_uint32),    # Sequence Number
+        ("ack", 	ctypes.c_uint32),    # Acknowledgment Number
+        ("off_res", ctypes.c_uint8),   	 # Data Offset + Reserved bits
         ("flags", 	ctypes.c_uint8),     # Control Flags (SYN, ACK, FIN, etc.)
-        ("win", 	ctypes.c_uint16),      # Window Size
-        ("chk", 	ctypes.c_uint16),      # Checksum
-        ("urg", 	ctypes.c_uint16),      # Urgent Pointer
+        ("win", 	ctypes.c_uint16),    # Window Size
+        ("chk", 	ctypes.c_uint16),    # Checksum
+        ("urg", 	ctypes.c_uint16),    # Urgent Pointer
     ]
 
     @property
@@ -106,6 +106,7 @@ class TCPHeader(ctypes.Structure):
                 return timestamp
         return None
 
+    @property
     def flags_num(self) -> int:
         return self.flags
     

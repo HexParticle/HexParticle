@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
 import ctypes
+import typing
 
 # --- IP Protocol Numbers (assigned by IANA) ---
 # Used to identify the next level protocol in the IP header 'proto' field
@@ -147,3 +148,6 @@ class IPV6Header(ctypes.Structure):
         ('src', 			CT_IPV6_ADDRESS),
         ('dst', 			CT_IPV6_ADDRESS)
     ]
+
+
+AnyIPHeader = typing.Union[IPV4Header, IPV6Header]

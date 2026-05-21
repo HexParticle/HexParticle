@@ -6,12 +6,16 @@ from  PyQt6 import QtCore, QtGui, QtWidgets
 from hexlib.protocol import icmp, ip, arp, tcp, udp
 from hexlib.lib_wrapper import HexParticle
 from hexlib import ParsedPacket
+
 from components import ProtocolDissector, HexViewer
+from windows.tcp import TCPSessionAssemblyWindow
 
 import hexlib
 import app_ctx
-import tcp_conn_ctx as tcpcon
+import core.tcp_stream
 import style_loader
+
+import typing
 
 class HexParticleWorker(QtCore.QThread):
     packet_received = QtCore.pyqtSignal(ParsedPacket)
@@ -43,7 +47,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.worker = None
         self.interface = interface
-        self.packets = []
+        self.packets: typing.List[ParsedPacket] = []
         self._ctx = ctx
 
         # the most recent packet
@@ -53,7 +57,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.selected_packet: ParsedPacket = None
 
         # reassembling TCP segments
-        self.tcp_conns: tcpcon.TCPConnectionCtx = tcpcon.TCPConnectionCtx()
+        self.tcp_stream_ctx = core.tcp_stream.TCPStreamContext()
+        self.tcp_stream_keys = []
 
         self.tcp_session_windows = [] # keeping references so windows don't close immediately
 
@@ -129,16 +134,23 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         lib_path = self._ctx.cmdline_options.lib_path
         self.worker = HexParticleWorker(self.interface, lib_path)
 
-        self.worker.packet_received.connect(self.process_incoming_packet)
+        self.worker.packet_received.connect(self.ingest_incoming_packet)
         self.worker.start()
 
 
-    def process_incoming_packet(self, dissected_pack: ParsedPacket):
-        if dissected_pack is None or len(dissected_pack._layers) == 0:
+    def ingest_incoming_packet(self, pp: ParsedPacket):
+        if pp is None or len(pp) == 0:
             raise RowConstructionError("Layer count must be at least 1")
 
-        self.most_recent_packet = dissected_pack
-        self.construct_row(dissected_pack)
+        if pp.is_tcp_packet():
+            stream_key = self.tcp_stream_ctx.track_packet(pp)
+            if stream_key is None:
+                print("Failed to generate TCP stream key!")
+            
+            self.tcp_stream_keys.append(stream_key) # None is also inserted
+
+        self.most_recent_packet = pp
+        self.construct_row(pp)
 
     
     def construct_row(self, dp: ParsedPacket):
@@ -175,8 +187,6 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         else:
             src_ip = hexlib.ipv6_to_str(iph.src)
             dst_ip = hexlib.ipv6_to_str(iph.dst)
-
-        self.current_session_key = self.tcp_conns.manage_tcp_packet(iph, tcph)
 
         src_port = tcph.sport
         dst_port = tcph.dport
@@ -266,8 +276,6 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         
         self.packet_table.setItem(row, 0, src_item)
         self.packet_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(dst)))
-        self.packet_table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(src)))
-        self.packet_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(dst)))
         self.packet_table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(proto)))
         self.packet_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(length)))
         self.packet_table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(info)))
@@ -292,14 +300,31 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):
-        menu = QtWidgets.QMenu()
-        packet = self.packet_table.itemAt(position)
+        item = self.packet_table.itemAt(position)
+        if item is None: return
 
-        if packet:
-            action_follow = menu.addAction(f"Follow")
-            action = menu.exec(self.packet_table.mapToGlobal(position))
-            if action == action_follow:
-                print(f"Following a TCP stream...")
+        row_index = item.row()
+        parsed_pack = self.packets[row_index]
+
+        if parsed_pack is None: return
+
+        main_menu = QtWidgets.QMenu(self.packet_table)
+        follow_menu = QtWidgets.QMenu("Follow", main_menu)
+        follow_tcp = follow_menu.addAction("TCP Stream")
+
+        if not parsed_pack.is_tcp_packet():
+            follow_tcp.setEnabled(False)
+        
+        main_menu.addMenu(follow_menu)
+        action = main_menu.exec(QtGui.QCursor.pos())
+
+        if action == follow_tcp and parsed_pack.is_tcp_packet():
+            stream_key = self.tcp_stream_keys[row_index]
+            if self.tcp_stream_ctx.is_stream_open(stream_key):
+                stream = self.tcp_stream_ctx.get_stream(stream_key)
+                stream_window = TCPSessionAssemblyWindow(stream)
+                self.tcp_session_windows.append(stream_window)
+                stream_window.show()
 
 
 class RowConstructionError(ValueError):

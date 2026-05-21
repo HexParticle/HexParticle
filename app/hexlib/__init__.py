@@ -7,22 +7,22 @@ import ipaddress
 import hexlib.protocol as proto
 
 def mac_to_str(bytes: bytearray) -> str:
-	if len(bytes) != 6:
-		raise ValueError("length must be 6")
-	
-	return ":".join(map(hex, bytes)).replace("0x", "")
+    if len(bytes) != 6:
+        raise ValueError("length must be 6")
+    
+    return ":".join(map(hex, bytes)).replace("0x", "")
     
 def ip_to_str(octets: typing.List[int]) -> str:
-	if len(octets) != 4:
-		raise ValueError("length must be 4")
+    if len(octets) != 4:
+        raise ValueError("length must be 4")
 
-	return ".".join(map(str, octets))
+    return ".".join(map(str, octets))
 
 def ipv6_to_str(octets) -> str:
-	if len(octets) != 16:
-		raise ValueError("length must be 16")
+    if len(octets) != 16:
+        raise ValueError("length must be 16")
 
-	return str(ipaddress.IPv6Address(bytes(octets)))
+    return str(ipaddress.IPv6Address(bytes(octets)))
 
 
 class ProtocolType:
@@ -155,7 +155,15 @@ class ParsedPacket:
     def is_tcp_packet(self) -> bool:
         return self._transport_layer_proto_type == ProtocolType.TCP 
 
+
+    def get_ip_layer(self):
+        ip_layer = self._layers[1]
+        if isinstance(ip_layer, proto.IPV4Header) or isinstance(ip_layer, proto.IPV6Header):
+            return ip_layer
+        else:
+            raise UnexpectedLayerTypeError("IP", "")
     
+
     def get_tcp_layer(self) -> proto.TCPHeader:
         tcp_layer = self._layers[2]
         if isinstance(tcp_layer, proto.TCPHeader):
@@ -167,7 +175,7 @@ class ParsedPacket:
     def is_ipv4_packet(self) -> bool:
         return self._network_layer_proto_type == ProtocolType.IPV4
 
-	
+    
     def is_udp_packet(self) -> bool:
         return self._transport_layer_proto_type == ProtocolType.UDP 
 
@@ -231,6 +239,10 @@ class ParsedPacket:
     
     def __iter__(self):
         return iter(self._layers)
+
+    
+    def __len__(self):
+        return len(self._layers)   
     
 
 class PacketError(Exception):
@@ -245,12 +257,12 @@ class UnexpectedLayerTypeError(PacketError, ValueError):
 
 
 __all__ = [
-	'ProtocolNode',
-	'ProtocolType',
-	'COMMON_PORTS',
-	'mac_to_str',
-	'ip_to_str',
-	'ipv6_to_str',
+    'ProtocolNode',
+    'ProtocolType',
+    'COMMON_PORTS',
+    'mac_to_str',
+    'ip_to_str',
+    'ipv6_to_str',
     'ParsedPacket',
     'PacketError',
     'UnexpectedLayerTypeError'

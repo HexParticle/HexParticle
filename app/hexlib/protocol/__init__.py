@@ -7,7 +7,7 @@ from . import icmp
 from .tcp import TCPHeader, TCPOption
 from . import tcp
 
-from .ip import IPV4Header, IPV6Header
+from .ip import IPV4Header, IPV6Header, AnyIPHeader
 from . import ip
 
 from .ether import EtherHeader, VlanTag
@@ -27,6 +27,7 @@ __all__ =  [
 	'tcp',
 	'IPV4Header',
 	'IPV6Header',
+	'AnyIPHeader',
 	'ip',
 	'UDPHeader',
 	'udp',
