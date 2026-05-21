@@ -21,7 +21,7 @@ class HexParticleApplication:
         sys.exit(self._pyqt_app.exec())
 
 
-if __name__ == "__main__":
+if __name__ == "__main2__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     cmdline_parser = argparse.ArgumentParser(
@@ -37,3 +37,22 @@ if __name__ == "__main__":
 
     app = HexParticleApplication(AppContext(cmdline_parser.parse_args()))
     app.start()
+
+
+if __name__ == "__main__":
+    from core.netdsl import tokenizer
+    from core.netdsl import Parser
+
+    source = "from ip 10.0.0.1 to port"
+    tkzer = tokenizer.Tokenizer(source)
+
+    tokens_input = tkzer.tokenize()
+    parser = Parser(tokens_input)
+    root_stmt = parser.parse_from_stmt()
+    
+    print("Parsing pass trace complete.")
+    print(f"Statement Node Target Type : {root_stmt.type.name}")
+    print(f"  ├─ From Expression Class : {type(root_stmt.from_expr).__name__} (Type: {root_stmt.from_expr.type.name})")
+    print(f"  │   └─ Value             : {root_stmt.from_expr.value.octets}")
+    print(f"  └─ To Expression Class   : {type(root_stmt.to_expr).__name__} (Type: {root_stmt.to_expr.type.name})")
+    print(f"      └─ Value             : {root_stmt.to_expr.value}")
