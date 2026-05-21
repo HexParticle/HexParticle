@@ -7,7 +7,7 @@ from hexlib.protocol import icmp, ip, arp, tcp, udp
 from hexlib.lib_wrapper import HexParticle
 from hexlib import ParsedPacket
 
-from components import ProtocolDissector, HexViewer
+from components import ProtocolDissector, HexViewer, ConfirmationDialog
 from windows.tcp import TCPSessionAssemblyWindow
 
 import hexlib
@@ -127,6 +127,22 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
     def start_sniffing(self):
         if not self.interface: return
+
+        if self.packet_table.rowCount() > 0:
+            dialog = ConfirmationDialog(
+                parent=self, 
+                message="Restarting will discard all currently captured packets. Proceed?"
+            )
+            
+            result = dialog.exec()
+
+            if result == ConfirmationDialog.DialogCode.Accepted:
+                print("Restarting network engine...")
+                self.packet_table.clearContents()
+                self.packet_table.setRowCount(0)
+                self.start_sniffing()
+            else:
+                print("Restart aborted by user.")
 
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
