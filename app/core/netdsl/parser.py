@@ -94,23 +94,3 @@ class Parser:
 
     def parse_port_expr(self) -> ast.PortExpr:
         return ast.PortExpr(value=3333)
-
-	
-if __name__ == "__main__":
-    tokens_input = [
-        tokenizer.Token(tokenizer.TokenType.UNKNOWN, "from"),
-        tokenizer.Token(tokenizer.TokenType.IP, "ip"),
-        tokenizer.Token(tokenizer.TokenType.IPADDR, "10.0.0.1"),
-        tokenizer.Token(tokenizer.TokenType.TO, "to"),
-        tokenizer.Token(tokenizer.TokenType.PORT, "port")
-    ]
-    
-    parser = Parser(tokens_input)
-    root_stmt = parser.parse_from_stmt()
-    
-    print("Parsing pass trace complete.")
-    print(f"Statement Node Target Type : {root_stmt.type.name}")
-    print(f"  ├─ From Expression Class : {type(root_stmt.from_expr).__name__} (Type: {root_stmt.from_expr.type.name})")
-    print(f"  │   └─ Value             : {root_stmt.from_expr.value.octets}")
-    print(f"  └─ To Expression Class   : {type(root_stmt.to_expr).__name__} (Type: {root_stmt.to_expr.type.name})")
-    print(f"      └─ Value             : {root_stmt.to_expr.value}")

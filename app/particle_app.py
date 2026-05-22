@@ -40,11 +40,10 @@ if __name__ == "__main2__":
 
 
 if __name__ == "__main__":
-    from core.netdsl import tokenizer
-    from core.netdsl import Parser
+    from core.netdsl import Parser, Tokenizer
 
     source = "from ip 10.0.0.1 to port"
-    tkzer = tokenizer.Tokenizer(source)
+    tkzer = Tokenizer(source)
 
     tokens_input = tkzer.tokenize()
     parser = Parser(tokens_input)
