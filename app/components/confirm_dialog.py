@@ -1,8 +1,8 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2023 Kagati Foundation
+
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt
-
-# Do you want to restart the current capture?
-# Restart Session
 
 class ConfirmationDialog(QDialog):
     def __init__(self, parent=None, title: str = "HexParticle", message: str = "A message from HexParticle"):

@@ -1,0 +1,279 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    AND
+    DOT
+    OR
+
+Grammar
+
+Rule 0     S' -> statement
+Rule 1     statement -> FROM endpoint TO endpoint
+Rule 2     statement -> FROM endpoint TO endpoint where_clause
+Rule 3     endpoint -> IP_ADDRESS COLON NUMBER
+Rule 4     endpoint -> IP_ADDRESS AT MAC_ADDRESS
+Rule 5     endpoint -> IP_ADDRESS COLON NUMBER AT MAC_ADDRESS
+Rule 6     endpoint -> IP_ADDRESS
+Rule 7     endpoint -> MAC_ADDRESS
+Rule 8     condition -> FIELD OPERATOR VALUE
+Rule 9     condition -> FIELD OPERATOR NUMBER
+Rule 10    condition_list -> condition
+Rule 11    condition_list -> condition_list COMMA condition
+Rule 12    where_clause -> WHERE condition_list
+
+Terminals, with rules where they appear
+
+AND                  : 
+AT                   : 4 5
+COLON                : 3 5
+COMMA                : 11
+DOT                  : 
+FIELD                : 8 9
+FROM                 : 1 2
+IP_ADDRESS           : 3 4 5 6
+MAC_ADDRESS          : 4 5 7
+NUMBER               : 3 5 9
+OPERATOR             : 8 9
+OR                   : 
+TO                   : 1 2
+VALUE                : 8
+WHERE                : 12
+error                : 
+
+Nonterminals, with rules where they appear
+
+condition            : 10 11
+condition_list       : 11 12
+endpoint             : 1 1 2 2
+statement            : 0
+where_clause         : 2
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . statement
+    (1) statement -> . FROM endpoint TO endpoint
+    (2) statement -> . FROM endpoint TO endpoint where_clause
+
+    FROM            shift and go to state 2
+
+    statement                      shift and go to state 1
+
+state 1
+
+    (0) S' -> statement .
+
+
+
+state 2
+
+    (1) statement -> FROM . endpoint TO endpoint
+    (2) statement -> FROM . endpoint TO endpoint where_clause
+    (3) endpoint -> . IP_ADDRESS COLON NUMBER
+    (4) endpoint -> . IP_ADDRESS AT MAC_ADDRESS
+    (5) endpoint -> . IP_ADDRESS COLON NUMBER AT MAC_ADDRESS
+    (6) endpoint -> . IP_ADDRESS
+    (7) endpoint -> . MAC_ADDRESS
+
+    IP_ADDRESS      shift and go to state 4
+    MAC_ADDRESS     shift and go to state 5
+
+    endpoint                       shift and go to state 3
+
+state 3
+
+    (1) statement -> FROM endpoint . TO endpoint
+    (2) statement -> FROM endpoint . TO endpoint where_clause
+
+    TO              shift and go to state 6
+
+
+state 4
+
+    (3) endpoint -> IP_ADDRESS . COLON NUMBER
+    (4) endpoint -> IP_ADDRESS . AT MAC_ADDRESS
+    (5) endpoint -> IP_ADDRESS . COLON NUMBER AT MAC_ADDRESS
+    (6) endpoint -> IP_ADDRESS .
+
+    COLON           shift and go to state 7
+    AT              shift and go to state 8
+    TO              reduce using rule 6 (endpoint -> IP_ADDRESS .)
+    WHERE           reduce using rule 6 (endpoint -> IP_ADDRESS .)
+    $end            reduce using rule 6 (endpoint -> IP_ADDRESS .)
+
+
+state 5
+
+    (7) endpoint -> MAC_ADDRESS .
+
+    TO              reduce using rule 7 (endpoint -> MAC_ADDRESS .)
+    WHERE           reduce using rule 7 (endpoint -> MAC_ADDRESS .)
+    $end            reduce using rule 7 (endpoint -> MAC_ADDRESS .)
+
+
+state 6
+
+    (1) statement -> FROM endpoint TO . endpoint
+    (2) statement -> FROM endpoint TO . endpoint where_clause
+    (3) endpoint -> . IP_ADDRESS COLON NUMBER
+    (4) endpoint -> . IP_ADDRESS AT MAC_ADDRESS
+    (5) endpoint -> . IP_ADDRESS COLON NUMBER AT MAC_ADDRESS
+    (6) endpoint -> . IP_ADDRESS
+    (7) endpoint -> . MAC_ADDRESS
+
+    IP_ADDRESS      shift and go to state 4
+    MAC_ADDRESS     shift and go to state 5
+
+    endpoint                       shift and go to state 9
+
+state 7
+
+    (3) endpoint -> IP_ADDRESS COLON . NUMBER
+    (5) endpoint -> IP_ADDRESS COLON . NUMBER AT MAC_ADDRESS
+
+    NUMBER          shift and go to state 10
+
+
+state 8
+
+    (4) endpoint -> IP_ADDRESS AT . MAC_ADDRESS
+
+    MAC_ADDRESS     shift and go to state 11
+
+
+state 9
+
+    (1) statement -> FROM endpoint TO endpoint .
+    (2) statement -> FROM endpoint TO endpoint . where_clause
+    (12) where_clause -> . WHERE condition_list
+
+    $end            reduce using rule 1 (statement -> FROM endpoint TO endpoint .)
+    WHERE           shift and go to state 13
+
+    where_clause                   shift and go to state 12
+
+state 10
+
+    (3) endpoint -> IP_ADDRESS COLON NUMBER .
+    (5) endpoint -> IP_ADDRESS COLON NUMBER . AT MAC_ADDRESS
+
+    TO              reduce using rule 3 (endpoint -> IP_ADDRESS COLON NUMBER .)
+    WHERE           reduce using rule 3 (endpoint -> IP_ADDRESS COLON NUMBER .)
+    $end            reduce using rule 3 (endpoint -> IP_ADDRESS COLON NUMBER .)
+    AT              shift and go to state 14
+
+
+state 11
+
+    (4) endpoint -> IP_ADDRESS AT MAC_ADDRESS .
+
+    TO              reduce using rule 4 (endpoint -> IP_ADDRESS AT MAC_ADDRESS .)
+    WHERE           reduce using rule 4 (endpoint -> IP_ADDRESS AT MAC_ADDRESS .)
+    $end            reduce using rule 4 (endpoint -> IP_ADDRESS AT MAC_ADDRESS .)
+
+
+state 12
+
+    (2) statement -> FROM endpoint TO endpoint where_clause .
+
+    $end            reduce using rule 2 (statement -> FROM endpoint TO endpoint where_clause .)
+
+
+state 13
+
+    (12) where_clause -> WHERE . condition_list
+    (10) condition_list -> . condition
+    (11) condition_list -> . condition_list COMMA condition
+    (8) condition -> . FIELD OPERATOR VALUE
+    (9) condition -> . FIELD OPERATOR NUMBER
+
+    FIELD           shift and go to state 17
+
+    condition_list                 shift and go to state 15
+    condition                      shift and go to state 16
+
+state 14
+
+    (5) endpoint -> IP_ADDRESS COLON NUMBER AT . MAC_ADDRESS
+
+    MAC_ADDRESS     shift and go to state 18
+
+
+state 15
+
+    (12) where_clause -> WHERE condition_list .
+    (11) condition_list -> condition_list . COMMA condition
+
+    $end            reduce using rule 12 (where_clause -> WHERE condition_list .)
+    COMMA           shift and go to state 19
+
+
+state 16
+
+    (10) condition_list -> condition .
+
+    COMMA           reduce using rule 10 (condition_list -> condition .)
+    $end            reduce using rule 10 (condition_list -> condition .)
+
+
+state 17
+
+    (8) condition -> FIELD . OPERATOR VALUE
+    (9) condition -> FIELD . OPERATOR NUMBER
+
+    OPERATOR        shift and go to state 20
+
+
+state 18
+
+    (5) endpoint -> IP_ADDRESS COLON NUMBER AT MAC_ADDRESS .
+
+    TO              reduce using rule 5 (endpoint -> IP_ADDRESS COLON NUMBER AT MAC_ADDRESS .)
+    WHERE           reduce using rule 5 (endpoint -> IP_ADDRESS COLON NUMBER AT MAC_ADDRESS .)
+    $end            reduce using rule 5 (endpoint -> IP_ADDRESS COLON NUMBER AT MAC_ADDRESS .)
+
+
+state 19
+
+    (11) condition_list -> condition_list COMMA . condition
+    (8) condition -> . FIELD OPERATOR VALUE
+    (9) condition -> . FIELD OPERATOR NUMBER
+
+    FIELD           shift and go to state 17
+
+    condition                      shift and go to state 21
+
+state 20
+
+    (8) condition -> FIELD OPERATOR . VALUE
+    (9) condition -> FIELD OPERATOR . NUMBER
+
+    VALUE           shift and go to state 22
+    NUMBER          shift and go to state 23
+
+
+state 21
+
+    (11) condition_list -> condition_list COMMA condition .
+
+    COMMA           reduce using rule 11 (condition_list -> condition_list COMMA condition .)
+    $end            reduce using rule 11 (condition_list -> condition_list COMMA condition .)
+
+
+state 22
+
+    (8) condition -> FIELD OPERATOR VALUE .
+
+    COMMA           reduce using rule 8 (condition -> FIELD OPERATOR VALUE .)
+    $end            reduce using rule 8 (condition -> FIELD OPERATOR VALUE .)
+
+
+state 23
+
+    (9) condition -> FIELD OPERATOR NUMBER .
+
+    COMMA           reduce using rule 9 (condition -> FIELD OPERATOR NUMBER .)
+    $end            reduce using rule 9 (condition -> FIELD OPERATOR NUMBER .)
+

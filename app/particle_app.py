@@ -40,18 +40,18 @@ if __name__ == "__main2__":
 
 
 if __name__ == "__main__":
-    from core.netdsl import Parser, Tokenizer
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    source = "from ip 10.0.0.1 to port"
-    tkzer = Tokenizer(source)
+    cmdline_parser = argparse.ArgumentParser(
+        prog="HexParticle",
+        description="A mini packet analyzer"
+    )
 
-    tokens_input = tkzer.tokenize()
-    parser = Parser(tokens_input)
-    root_stmt = parser.parse_from_stmt()
-    
-    print("Parsing pass trace complete.")
-    print(f"Statement Node Target Type : {root_stmt.type.name}")
-    print(f"  ├─ From Expression Class : {type(root_stmt.from_expr).__name__} (Type: {root_stmt.from_expr.type.name})")
-    print(f"  │   └─ Value             : {root_stmt.from_expr.value.octets}")
-    print(f"  └─ To Expression Class   : {type(root_stmt.to_expr).__name__} (Type: {root_stmt.to_expr.type.name})")
-    print(f"      └─ Value             : {root_stmt.to_expr.value}")
+    cmdline_parser.add_argument(
+        "-l",
+        "--lib-path",
+        help="libhexp's path"
+    )
+
+    app = HexParticleApplication(AppContext(cmdline_parser.parse_args()))
+    app.start()

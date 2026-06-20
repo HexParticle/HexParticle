@@ -14,6 +14,7 @@ import hexlib
 import app_ctx
 import core.tcp_stream
 import style_loader
+import scripting
 
 import typing
 
@@ -85,10 +86,9 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(container)
         
-        self.search_bar = QtWidgets.QLineEdit()
-        self.search_bar.setPlaceholderText("Filter by Protocol or IP (e.g., TCP, 192.168...)")
-        self.search_bar.textChanged.connect(self.filter_table)
-        layout.addWidget(self.search_bar)
+        self.scripting_action = QtGui.QAction(QtGui.QIcon("../assets/scripting.png"), "Script", self)
+        self.scripting_action.triggered.connect(self.start_scripting_window)
+        self.toolbar.addAction(self.scripting_action)
         
         self.main_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
 
@@ -131,7 +131,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         if self.packet_table.rowCount() > 0:
             dialog = ConfirmationDialog(
                 parent=self, 
-                message="Restarting will discard all currently captured packets. Proceed?"
+                message="Do you want to restart the current capture?",
+                title="Restart Session"
             )
             
             result = dialog.exec()
@@ -142,7 +143,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
                 self.packet_table.setRowCount(0)
                 self.start_sniffing()
             else:
-                print("Restart aborted by user.")
+                return
 
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
@@ -313,6 +314,14 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             self.worker.wait()
         self.start_action.setEnabled(True)
         self.stop_action.setEnabled(False)
+
+    
+    def start_scripting_window(self):
+        self.scripting_window = scripting.ScriptEditorWindow(
+            scripting.netdsl.parse,
+            scripting.netdsl.emit_bpf
+        )
+        self.scripting_window.show()
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):
