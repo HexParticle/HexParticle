@@ -17,6 +17,7 @@ import style_loader
 import scripting
 
 import typing
+import threading
 
 class HexParticleWorker(QtCore.QThread):
     packet_received = QtCore.pyqtSignal(ParsedPacket)
@@ -27,13 +28,32 @@ class HexParticleWorker(QtCore.QThread):
         self.running = True
         self.hexp = HexParticle(interface, lib_path)
 
+        self.pending_filter = None
+        self.filter_lock = threading.Lock()
+
+    
+    def update_filter(self, new_filter: str):
+        with self.filter_lock:
+            self.pending_filter = new_filter
+
 
     def run(self):
         try:
             while self.running:
+                with self.filter_lock:
+                    if self.pending_filter is not None:
+                        filter_bytes = self.pending_filter.encode('UTF-8')
+
+                        filter_result = self.hexp.apply_filter(filter_bytes)
+                        if filter_result is None:
+                            print("Failed to apply filters!")
+                        
+                        self.pending_filter = None
+
                 packet = self.hexp.next_packet()
                 if packet:
                     self.packet_received.emit(packet)
+
             self.hexp.close()
         except Exception as e:
             print(e)
@@ -321,7 +341,13 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             scripting.netdsl.parse,
             scripting.netdsl.emit_bpf
         )
+    
+        self.scripting_window.on_filter_change(self.handle_compiled_bpf_output)
         self.scripting_window.show()
+
+    
+    def handle_compiled_bpf_output(self, bpf_output):
+        self.worker.update_filter(bpf_output)
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):

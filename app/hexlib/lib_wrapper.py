@@ -38,6 +38,9 @@ class HexParticleLib:
         lib.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
         lib.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
 
+        lib.apply_filter.argtypes = [ctypes.POINTER(ctypes.c_char)]
+        lib.apply_filter.restype = ctypes.c_int
+
         lib.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
         lib.free_hex_instance.restype = None
 
@@ -71,6 +74,12 @@ class HexParticleLib:
             self.lib.free_packet(node_ptr)
 
         return pwrapper
+    
+
+    def apply_filter(self, new_filter: bytearray) -> typing.Optional[int]:
+        if not new_filter: return None
+
+        return self.lib.apply_filter(new_filter)
 
 
     def free_instance(self, instance: HexInstance):
@@ -105,6 +114,10 @@ class HexParticle():
 
     def next_packet(self) -> typing.Optional[ParsedPacket]:
         return self._lib.read_next_packet(self._instance)
+
+    
+    def apply_filter(self, new_filter: bytearray) -> int:
+        return self._lib.apply_filter(new_filter)
 
 
     def close(self):

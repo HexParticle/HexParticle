@@ -1,4 +1,7 @@
-from PyQt6 import QtWidgets as widgets, QtGui, QtCore
+from PyQt6 import QtWidgets as widgets, QtGui
+from PyQt6 import QtCore
+
+import typing
 
 class ScriptEditor(widgets.QTextEdit):
     def __init__(self):
@@ -15,7 +18,13 @@ class ScriptEditor(widgets.QTextEdit):
 
 
 class ScriptEditorWindow(widgets.QWidget):
-    def __init__(self, parse_callback=None, emit_callback=None):
+    filter_compiled_signal = QtCore.pyqtSignal(str)
+      
+    def __init__(
+            self, 
+            parse_callback=None, 
+            emit_callback=None
+    ):
         super().__init__()
         self.parse_callback = parse_callback
         self.emit_callback = emit_callback
@@ -44,7 +53,20 @@ class ScriptEditorWindow(widgets.QWidget):
         main_layout.addWidget(widgets.QLabel("BPF Filter: "))
         main_layout.addWidget(self.output_viewer, stretch=1)
 
+        self.apply_bpf_filter_btn = widgets.QPushButton("Use BPF")
+        self.apply_bpf_filter_btn.clicked.connect(self.on_use_filter_button_clicked)
+        main_layout.addWidget(self.apply_bpf_filter_btn)
+
         self.setLayout(main_layout)
+
+    
+    def on_use_filter_button_clicked(self):
+        filter_text = self.bpf_output
+        self.filter_compiled_signal.emit(filter_text)
+
+    
+    def on_filter_change(self, cb: typing.Callable[[str], int]):
+        self.filter_compiled_signal.connect(cb)
 
 
     def handle_compile(self):
@@ -57,8 +79,10 @@ class ScriptEditorWindow(widgets.QWidget):
             if self.parse_callback and self.emit_callback:
                 ast_root = self.parse_callback(dsl_text)
                 if ast_root:
-                    bpf_output = self.emit_callback(ast_root)
-                    self.output_viewer.setText(f'"{bpf_output}"')
+                    self.bpf_output = self.emit_callback(ast_root)
+
+                    if self.bpf_output:
+                        self.output_viewer.setText(f'"{self.bpf_output}"')
             else:
                 self.output_viewer.setText(f"Error")
         except Exception as e:
