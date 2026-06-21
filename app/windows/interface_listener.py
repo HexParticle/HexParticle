@@ -15,6 +15,7 @@ import app_ctx
 import core.tcp_stream
 import style_loader
 import scripting
+import netdsl
 
 import typing
 import threading
@@ -338,8 +339,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
     
     def start_scripting_window(self):
         self.scripting_window = scripting.ScriptEditorWindow(
-            scripting.netdsl.parse,
-            scripting.netdsl.emit_bpf
+            netdsl.parse,
+            netdsl.emit_bpf
         )
     
         self.scripting_window.on_filter_change(self.handle_compiled_bpf_output)

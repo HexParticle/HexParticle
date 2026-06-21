@@ -17,7 +17,7 @@ class ScriptEditor(widgets.QTextEdit):
         )
 
 
-class ScriptEditorWindow(widgets.QWidget):
+class ScriptEditorWindow(widgets.QDialog):
     filter_compiled_signal = QtCore.pyqtSignal(str)
       
     def __init__(
