@@ -348,7 +348,18 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
     
     def handle_compiled_bpf_output(self, bpf_output):
-        self.worker.update_filter(bpf_output)
+        if self.worker is None:
+            dialog = ConfirmationDialog(
+                parent=self, 
+                message="Do you want to start the capture?",
+                title="Start Session"
+            )
+
+            dialog.on_accept(self.start_sniffing)
+            dialog.exec()
+
+        if self.worker is not None:
+            self.worker.update_filter(bpf_output)
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):
