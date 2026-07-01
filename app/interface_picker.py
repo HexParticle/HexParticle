@@ -1,9 +1,27 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2023 Kagati Foundation
 
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel)
+from PyQt6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QLabel,
+    QPushButton,
+    QFileDialog
+)
 
-from windows import InterfaceListenerWindow
+from PyQt6.QtCore import (
+    Qt
+)
+
+from PyQt6.QtGui import (
+    QIcon
+)
+
+from interface_listener import InterfaceListenerWindow
+from hexlib.lib_wrapper import HEX_OFFLINE_MODE, HEX_LIVE_MODE
+
 import app_ctx
 import style_loader
 
@@ -28,13 +46,36 @@ class InterfacePickerWindow(QWidget):
         header = QLabel("Welcome to HexParticle")
         header.setObjectName("Header")
         layout.addWidget(header)
-        
+
+        self.open_pcap_file_button = QPushButton("Open PCAP File")
+        self.open_pcap_file_button.setIcon(QIcon("../assets/open.png"))
+        self.open_pcap_file_button.clicked.connect(self.open_pcap_file_picker)
+        self.open_pcap_file_button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        layout.addWidget(self.open_pcap_file_button)
+
         layout.addWidget(QLabel("Select an interface to start analysis:"))
         
         self.interface_list = QListWidget()
         layout.addWidget(self.interface_list)
 
         self.load_interfaces()
+
+
+    def open_pcap_file_picker(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Pcap File",
+            "",
+            "PCAP Files (*.pcapng)"
+        )
+
+        if file_path:
+            self._ctx.initialize_library(file_path, HEX_OFFLINE_MODE)
+            if_listener = InterfaceListenerWindow(ctx=self._ctx)
+        
+            self.active_listeners.append(if_listener)
+            if_listener.show()
 
 
     def load_interfaces(self):
@@ -53,7 +94,10 @@ class InterfacePickerWindow(QWidget):
             self.active_listeners = []
 
         interface_name = item.text()
-        if_listener = InterfaceListenerWindow(interface=interface_name, ctx=self._ctx)
+
+        self._ctx.initialize_library(interface_name, HEX_LIVE_MODE)
+
+        if_listener = InterfaceListenerWindow(ctx=self._ctx)
         
         self.active_listeners.append(if_listener)
         if_listener.show()

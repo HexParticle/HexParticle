@@ -8,11 +8,13 @@ import signal
 import argparse
 
 from app_ctx import AppContext
-from windows import InterfacePickerWindow
+from interface_picker import InterfacePickerWindow
 
 class HexParticleApplication:
-    def __init__(self, ctx: AppContext):
-        self._ctx = ctx
+    def __init__(self, args):
+        self.args = args
+        
+        self._ctx = AppContext(cmd_options=self.args)
 
     def start(self):
         self._pyqt_app = QApplication(sys.argv)
@@ -53,5 +55,5 @@ if __name__ == "__main__":
         help="libhexp's path"
     )
 
-    app = HexParticleApplication(AppContext(cmdline_parser.parse_args()))
+    app = HexParticleApplication(cmdline_parser.parse_args())
     app.start()

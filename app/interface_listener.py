@@ -4,7 +4,7 @@
 from  PyQt6 import QtCore, QtGui, QtWidgets
 
 from hexlib.protocol import icmp, ip, arp, tcp, udp
-from hexlib.lib_wrapper import HexParticle
+from hexlib.lib_wrapper import HexParticleLib
 from hexlib import ParsedPacket
 
 from components import ProtocolDissector, HexViewer, ConfirmationDialog
@@ -23,11 +23,10 @@ import threading
 class HexParticleWorker(QtCore.QThread):
     packet_received = QtCore.pyqtSignal(ParsedPacket)
 
-    def __init__(self, interface: str, lib_path: str):
+    def __init__(self, hexp: HexParticleLib):
         super().__init__()
-        self.interface = interface
         self.running = True
-        self.hexp = HexParticle(interface, lib_path)
+        self.hexp = hexp
 
         self.pending_filter = None
         self.filter_lock = threading.Lock()
@@ -65,10 +64,9 @@ class HexParticleWorker(QtCore.QThread):
 
 
 class InterfaceListenerWindow(QtWidgets.QMainWindow):
-    def __init__(self, interface: str, ctx: app_ctx.AppContext):
+    def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
         self.worker = None
-        self.interface = interface
         self.packets: typing.List[ParsedPacket] = []
         self._ctx = ctx
 
@@ -92,6 +90,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.resize(1000, 600)
         self.setStyleSheet(style_loader.get_style("./styles/interface_listener.css"))
 
+        self._create_menu_bar()
+
         self.toolbar = QtWidgets.QToolBar("Main Toolbar")
         self.addToolBar(self.toolbar)
 
@@ -107,7 +107,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(container)
         
-        self.scripting_action = QtGui.QAction(QtGui.QIcon("../assets/scripting.png"), "Script", self)
+        self.scripting_action = QtGui.QAction(QtGui.QIcon("../assets/script.png"), "Script", self)
         self.scripting_action.triggered.connect(self.start_scripting_window)
         self.toolbar.addAction(self.scripting_action)
         
@@ -141,14 +141,19 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.main_splitter)
         self.setCentralWidget(container)
 
+
+    def _create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        self.file_menu = QtWidgets.QMenu("&File", self)
+        menu_bar.addMenu(self.file_menu)
+
     
     def filter_table(self, filters):
         print(filters)
 
 
     def start_sniffing(self):
-        if not self.interface: return
-
         if self.packet_table.rowCount() > 0:
             dialog = ConfirmationDialog(
                 parent=self, 
@@ -169,8 +174,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
         
-        lib_path = self._ctx.cmdline_options.lib_path
-        self.worker = HexParticleWorker(self.interface, lib_path)
+        self.worker = HexParticleWorker(self._ctx._lib)
 
         self.worker.packet_received.connect(self.ingest_incoming_packet)
         self.worker.start()
