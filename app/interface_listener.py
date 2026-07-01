@@ -8,11 +8,14 @@ from hexlib.lib_wrapper import HexParticleLib
 from hexlib import ParsedPacket
 
 from components import ProtocolDissector, HexViewer, ConfirmationDialog
-from tcp import TCPSessionAssemblyWindow
+from features.tcp_inspector import (
+	TcpSessionAssemblyWindow,
+    TcpStreamContext,
+    gen_tcp_stream_key
+)
 
 import hexlib
 import app_ctx
-import core.tcp_stream
 import style_loader
 import scripting
 import netdsl
@@ -77,8 +80,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.selected_packet: ParsedPacket = None
 
         # reassembling TCP segments
-        self.tcp_stream_ctx = core.tcp_stream.TCPStreamContext()
-        self.tcp_stream_keys = []
+        self.tcp_stream_ctx = TcpStreamContext()
 
         self.tcp_session_windows = [] # keeping references so windows don't close immediately
 
@@ -188,8 +190,6 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             stream_key = self.tcp_stream_ctx.track_packet(pp)
             if stream_key is None:
                 print("Failed to generate TCP stream key!")
-            
-            self.tcp_stream_keys.append(stream_key) # None is also inserted
 
         self.most_recent_packet = pp
         self.construct_row(pp)
@@ -274,9 +274,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
     def construct_ipv6_row(self, dissected_pack: ParsedPacket):
         if len(dissected_pack._layers) < 3:
-            # raise RowConstructionError("Layer count must be at least 3!")
-
-            # accepts only TCP and UP at the moment
+            # accepts only TCP and UDP at the moment
             return
 
         transport_layer_pack = dissected_pack._layers[2]
@@ -377,21 +375,39 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
         main_menu = QtWidgets.QMenu(self.packet_table)
         follow_menu = QtWidgets.QMenu("Follow", main_menu)
+
         follow_tcp = follow_menu.addAction("TCP Stream")
+        follow_ip = follow_menu.addAction("IP Stream")
 
         if not parsed_pack.is_tcp_packet():
             follow_tcp.setEnabled(False)
+
+        if not parsed_pack.is_ipv4_packet():
+            follow_ip.setEnabled(False)
         
         main_menu.addMenu(follow_menu)
         action = main_menu.exec(QtGui.QCursor.pos())
 
         if action == follow_tcp and parsed_pack.is_tcp_packet():
-            stream_key = self.tcp_stream_keys[row_index]
-            if self.tcp_stream_ctx.is_stream_open(stream_key):
-                stream = self.tcp_stream_ctx.get_stream(stream_key)
-                stream_window = TCPSessionAssemblyWindow(stream)
-                self.tcp_session_windows.append(stream_window)
-                stream_window.show()
+            packet = self.packets[row_index]
+            
+            if packet is None:
+                print("Bug: Packet not found at row")
+            else:
+                self.show_tcp_session_assembly_window(packet)
+
+    
+    def show_tcp_session_assembly_window(self, packet: ParsedPacket):
+        ip = packet.get_ip_layer()
+        tcp = packet.get_tcp_layer()
+
+        stream_key = gen_tcp_stream_key(ip, tcp)
+
+        if self.tcp_stream_ctx.is_stream_open(stream_key):
+            stream = self.tcp_stream_ctx.get_stream(stream_key)
+            stream_window = TcpSessionAssemblyWindow(stream)
+            self.tcp_session_windows.append(stream_window)
+            stream_window.show()
 
 
 class RowConstructionError(ValueError):

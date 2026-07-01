@@ -6,7 +6,7 @@ from hexlib.protocol import tcp
 
 from PyQt6 import QtWidgets, QtCore
 
-class TCPSessionAssemblyWindow(QtWidgets.QWidget):
+class TcpSessionAssemblyWindow(QtWidgets.QWidget):
     def __init__(self, session: typing.List[tcp.TCPHeader]):
         super().__init__()
         self.session = session
