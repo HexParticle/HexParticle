@@ -12,9 +12,15 @@ HEX_LIVE_MODE 		= 0x1
 HEX_OFFLINE_MODE 	= 0x2
 
 class HexInstance(ctypes.Structure):
-    _fields_ = [
-        ("handle", ctypes.c_void_p)
-    ]
+    pass
+
+
+HexInstancePtr = ctypes.POINTER(HexInstance)
+
+ProtocolNodePtr = ctypes.POINTER(ProtocolNode)
+
+CStr = ctypes.POINTER(ctypes.c_char)
+CInt = ctypes.c_int
 
 
 class HexParticleLib:
@@ -40,26 +46,26 @@ class HexParticleLib:
             raise RuntimeError(f"Failed to load {abs_path}: {e}")
 
         # Packet management
-        self.lib.create_hex_instance.argtypes = [ctypes.c_char_p, ctypes.c_int]
-        self.lib.create_hex_instance.restype = HexInstance
+        self.lib.create_hex_instance.argtypes = [CStr, CInt]
+        self.lib.create_hex_instance.restype = HexInstancePtr
 
-        self.lib.read_next_packet.argtypes = [ctypes.POINTER(HexInstance)]
-        self.lib.read_next_packet.restype = ctypes.POINTER(ProtocolNode)
+        self.lib.read_next_packet.argtypes = [HexInstancePtr]
+        self.lib.read_next_packet.restype = ProtocolNodePtr
 
-        self.lib.apply_filter.argtypes = [ctypes.POINTER(ctypes.c_char)]
+        self.lib.apply_filter.argtypes = [HexInstancePtr, CStr]
         self.lib.apply_filter.restype = ctypes.c_int
 
-        self.lib.free_hex_instance.argtypes = [ctypes.POINTER(HexInstance)]
+        self.lib.free_hex_instance.argtypes = [HexInstancePtr]
         self.lib.free_hex_instance.restype = None
 
-        self.lib.free_packet.argtypes = [ctypes.POINTER(ProtocolNode)]
+        self.lib.free_packet.argtypes = [ProtocolNodePtr]
         self.lib.free_packet.restype = None
 
         # Interface management
-        self.lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_int)]
+        self.lib.get_all_interfaces_names.argtypes = [ctypes.POINTER(CInt)]
         self.lib.get_all_interfaces_names.restype = ctypes.POINTER(ctypes.c_char_p)
 
-        self.lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), ctypes.c_int]
+        self.lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), CInt]
         self.lib.free_interfaces_names.restype = None
 
         self._instance = None
@@ -104,6 +110,7 @@ class HexParticleLib:
     def close(self):
         if self._instance is not None:
             self.lib.free_hex_instance(self._instance)
+            self._instance = None
 
 
     def get_all_interfaces(self) -> typing.List[str]:
