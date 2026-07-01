@@ -9,7 +9,7 @@ from hexlib import ParsedPacket
 
 from components import ProtocolDissector, HexViewer, ConfirmationDialog
 from features.tcp_inspector import (
-	TcpSessionAssemblyWindow,
+    TcpSessionAssemblyWindow,
     TcpStreamContext,
     gen_tcp_stream_key
 )
@@ -56,8 +56,6 @@ class HexParticleWorker(QtCore.QThread):
                 packet = self.hexp.next_packet()
                 if packet:
                     self.packet_received.emit(packet)
-
-            self.hexp.close()
         except Exception as e:
             print(e)
 
@@ -158,26 +156,27 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
     def start_sniffing(self):
         if self.packet_table.rowCount() > 0:
             dialog = ConfirmationDialog(
-                parent=self, 
+                parent=self,
                 message="Do you want to restart the current capture?",
                 title="Restart Session"
             )
-            
-            result = dialog.exec()
 
-            if result == ConfirmationDialog.DialogCode.Accepted:
-                print("Restarting network engine...")
-                self.packet_table.clearContents()
-                self.packet_table.setRowCount(0)
-                self.start_sniffing()
-            else:
+            if dialog.exec() != ConfirmationDialog.DialogCode.Accepted:
                 return
 
+            print("Restarting network engine...")
+            self.packet_table.clearContents()
+            self.packet_table.setRowCount(0)
+            self.packets = []
+
+        self._start_worker()
+
+    
+    def _start_worker(self):
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
-        
-        self.worker = HexParticleWorker(self._ctx._lib)
 
+        self.worker = HexParticleWorker(self._ctx._lib)
         self.worker.packet_received.connect(self.ingest_incoming_packet)
         self.worker.start()
 
@@ -192,6 +191,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
                 print("Failed to generate TCP stream key!")
 
         self.most_recent_packet = pp
+
+        self.packets.append(pp)
         self.construct_row(pp)
 
     
@@ -309,8 +310,6 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         row = self.packet_table.rowCount()
         self.packet_table.insertRow(row)
 
-        self.packets.append(dissected_pack)
-
         src_item = QtWidgets.QTableWidgetItem(str(src))
         src_item.setData(QtCore.Qt.ItemDataRole.UserRole, len(self.packets) - 1)
         
@@ -402,6 +401,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         tcp = packet.get_tcp_layer()
 
         stream_key = gen_tcp_stream_key(ip, tcp)
+        print("Find stream key: ", stream_key)
 
         if self.tcp_stream_ctx.is_stream_open(stream_key):
             stream = self.tcp_stream_ctx.get_stream(stream_key)

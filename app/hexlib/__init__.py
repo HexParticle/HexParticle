@@ -172,6 +172,10 @@ class ParsedPacket:
             raise UnexpectedLayerTypeError("TCP", "")
 
     
+    def is_ip_packet(self):
+        return self.is_ipv4_packet() or self.is_ipv6_packet()
+
+    
     def is_ipv4_packet(self) -> bool:
         return self._network_layer_proto_type == ProtocolType.IPV4
 
