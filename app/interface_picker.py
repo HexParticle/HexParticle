@@ -67,7 +67,7 @@ class InterfacePickerWindow(QWidget):
             self,
             "Open Pcap File",
             "",
-            "PCAP Files (*.pcapng)"
+            "PCAP Files (*.pcap *.pcapng)"
         )
 
         if file_path:

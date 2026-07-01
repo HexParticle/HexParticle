@@ -8,7 +8,7 @@ from hexlib.lib_wrapper import HexParticleLib
 from hexlib import ParsedPacket
 
 from components import ProtocolDissector, HexViewer, ConfirmationDialog
-from windows.tcp import TCPSessionAssemblyWindow
+from tcp import TCPSessionAssemblyWindow
 
 import hexlib
 import app_ctx

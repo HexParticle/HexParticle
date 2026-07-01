@@ -5,8 +5,7 @@ import ctypes
 import typing
 import os
 
-from hexlib import ProtocolNode
-from hexlib import ParsedPacket
+from hexlib import ProtocolNode, ParsedPacket
 
 HEX_LIVE_MODE 		= 0x1
 HEX_OFFLINE_MODE 	= 0x2
