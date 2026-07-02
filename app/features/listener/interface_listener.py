@@ -14,7 +14,8 @@ from features.tcp_inspector import (
     gen_tcp_stream_key
 )
 
-from features.listener import PacketCapturerThread
+from features.listener.packet_capturer import PacketCapturerThread
+from features.listener.packet_processor import PacketProcessorThread
 
 import hexlib
 import app_ctx
@@ -27,8 +28,19 @@ import typing
 class InterfaceListenerWindow(QtWidgets.QMainWindow):
     def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
+
+        # reassembling TCP segments
+        self.tcp_stream_ctx = TcpStreamContext()
+        
         self.capture_thread = None
+        
+        # processing each packet in a separate thread
+        self.packet_process_thread = PacketProcessorThread(self.tcp_stream_ctx)
+        
+        # processed packets
         self.packets: typing.List[ParsedPacket] = []
+
+        # application context
         self._ctx = ctx
 
         # the most recent packet
@@ -37,12 +49,13 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         # the currently selected packet
         self.selected_packet: ParsedPacket = None
 
-        # reassembling TCP segments
-        self.tcp_stream_ctx = TcpStreamContext()
-
         self.tcp_session_windows = [] # keeping references so windows don't close immediately
 
         self.init_ui()
+
+        # start the packet processing thread
+        self.packet_process_thread.on_packet_processed(self.__construct_row)
+        self.packet_process_thread.start()
 
 
     def init_ui(self):
@@ -137,34 +150,34 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.stop_action.setEnabled(True)
 
         self.capture_thread = PacketCapturerThread(self._ctx._lib)
-        self.capture_thread.packet_captured.connect(self.ingest_incoming_packet)
+        self.capture_thread.on_packet_captured(self.__ingest_incoming_packet)
         self.capture_thread.start()
 
 
-    def ingest_incoming_packet(self, pp: ParsedPacket):
+    '''
+    Prepares the packet for row construction.
+    '''
+    def __ingest_incoming_packet(self, pp: ParsedPacket):
+        if pp is None: return
+
+        self.packet_process_thread.enqueue(pp)
+        
+        self.most_recent_packet = pp
+        self.packets.append(pp)
+
+    
+    def __construct_row(self, pp: ParsedPacket):
         if pp is None or len(pp) == 0:
             raise RowConstructionError("Layer count must be at least 1")
 
-        if pp.is_tcp_packet():
-            stream_key = self.tcp_stream_ctx.track_packet(pp)
-            if stream_key is None:
-                print("Failed to generate TCP stream key!")
-
-        self.most_recent_packet = pp
-
-        self.packets.append(pp)
-        self.construct_row(pp)
-
-    
-    def construct_row(self, dp: ParsedPacket):
-        net_layer_pack = dp._layers[1]
+        net_layer_pack = pp._layers[1]
 
         if isinstance(net_layer_pack, ip.IPV4Header):
-            self.construct_ipv4_row(dp)
+            self.construct_ipv4_row(pp)
         elif isinstance(net_layer_pack, ip.IPV6Header):
-            self.construct_ipv6_row(dp)
+            self.construct_ipv6_row(pp)
         elif isinstance(net_layer_pack, arp.ARPHeader):
-            self.construct_arp_row(dp)
+            self.construct_arp_row(pp)
         
     
     def construct_ipv4_row(self, dp: ParsedPacket):

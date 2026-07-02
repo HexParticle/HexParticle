@@ -4,45 +4,63 @@
 from PyQt6 import QtCore
 
 import queue
+from typing import Callable
 
 from hexlib import ParsedPacket
 from features.tcp_inspector import TcpStreamContext
 
+PacketHandler = Callable[[ParsedPacket], None]
+
 class PacketProcessorThread(QtCore.QThread):
-    row_ready = QtCore.pyqtSignal(list)
+    packet_processed = QtCore.pyqtSignal(object)
 
 
     def __init__(self, tcp_ctx: TcpStreamContext):
         super().__init__()
+
         self.tcp_ctx = tcp_ctx
-        self.queue = queue.Queue()
-        self.running = True
+
+        self.queue: queue.Queue[ParsedPacket | None] = queue.Queue()
+
+    
+    '''
+    The callable `cb` is run for every captured packet.
+    '''
+    def on_packet_processed(self, cb: PacketHandler):
+        if cb is None: return
+
+        self.packet_processed.connect(cb)
 
 
+    '''
+    Enqueue a parsed packet for processing.
+    '''
     def enqueue(self, pp: ParsedPacket):
         self.queue.put(pp)
 
 
+    '''
+    Start the thread.
+    '''
     def run(self):
-        while self.running:
+        while not self.isInterruptionRequested():
             pp = self.queue.get() 
 
-            row = self.build_row(pp)
-            self.row_ready.emit(row)
+            if pp is None: continue
 
+            processed = self.__process_incoming_packet(pp)
+            self.packet_processed.emit(processed)
 
-    def build_row(self, pp: ParsedPacket):
-        ip = pp.get_ip_layer()
-        tcp = pp.get_tcp_layer()
+    
+    def __process_incoming_packet(self, pp: ParsedPacket) -> ParsedPacket:
+        if pp.is_tcp_packet():
+            stream_key = self.tcp_ctx.track_packet(pp)
+            if stream_key is None:
+                print("Failed to generate TCP stream key!")
 
-        return [
-            str(ip.src),
-            str(ip.dst),
-            str(tcp.sport),
-            str(tcp.dport),
-        ]
+        return pp
 
 
     def stop(self):
-        self.running = False
+        self.requestInterruption()
         self.queue.put(None)

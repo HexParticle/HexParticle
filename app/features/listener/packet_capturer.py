@@ -6,6 +6,7 @@ from PyQt6 import QtCore
 from hexlib import HexParticleLib, ParsedPacket
 
 import threading
+from typing import Callable
 
 class PacketCapturerThread(QtCore.QThread):
     packet_captured = QtCore.pyqtSignal(ParsedPacket)
@@ -17,6 +18,12 @@ class PacketCapturerThread(QtCore.QThread):
 
         self.pending_filter = None
         self.filter_lock = threading.Lock()
+
+
+    def on_packet_captured(self, cb: Callable):
+        if cb is None: return
+        
+        self.packet_captured.connect(cb)
 
     
     def update_filter(self, new_filter: str):

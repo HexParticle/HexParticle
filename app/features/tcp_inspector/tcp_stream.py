@@ -41,7 +41,6 @@ class TcpStreamContext:
         self.__stream_keys.add(stream_key)
 
         if stream_key not in self.__conns:
-            print("Create new stream key: ", stream_key)
             self.__conns[stream_key] = []
         
         self.__conns[stream_key].append(tcp_hdr)
