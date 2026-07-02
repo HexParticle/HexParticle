@@ -5,10 +5,19 @@ import ctypes
 import typing
 import os
 
-from hexlib import ProtocolNode, ParsedPacket
+from hexlib.node import ProtocolNode
+from hexlib.packet import ParsedPacket
 
+'''
+PCAP live mode
+'''
 HEX_LIVE_MODE 		= 0x1
+
+'''
+PCAP offline mode
+'''
 HEX_OFFLINE_MODE 	= 0x2
+
 
 class HexInstance(ctypes.Structure):
     pass
@@ -18,6 +27,7 @@ HexInstancePtr = ctypes.POINTER(HexInstance)
 
 ProtocolNodePtr = ctypes.POINTER(ProtocolNode)
 
+# ctypes type aliases
 CStr = ctypes.POINTER(ctypes.c_char)
 CInt = ctypes.c_int
 

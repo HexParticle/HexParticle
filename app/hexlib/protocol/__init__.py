@@ -19,6 +19,21 @@ from . import udp
 from .arp import ARPHeader
 from . import arp
 
+class ProtocolType:
+    ETH					= 0
+    IPV4 				= 1
+    IPV6 				= 2
+    ARP 				= 3
+    TCP 				= 4
+    UDP 				= 5
+    ICMP 				= 6
+    IPV6_EXT			= 7
+    IPV6_EXT_HOP_BY_HOP = 8
+    IPV6_EXT_DST_OPTS   = 9
+    IPV6_EXT_FRAG       = 10
+    ICMPV6              = 11
+    RAW                 = 12
+
 __all__ =  [
 	'ICMPHeader',
 	'icmp',
@@ -35,5 +50,6 @@ __all__ =  [
 	'VlanTag',
 	'ether',
 	'ARPHeader',
-	'arp'
+	'arp',
+    'ProtocolType'
 ]

@@ -4,15 +4,17 @@
 from  PyQt6 import QtCore, QtGui, QtWidgets
 
 from hexlib.protocol import icmp, ip, arp, tcp, udp
-from hexlib.lib_wrapper import HexParticleLib
 from hexlib import ParsedPacket
 
 from components import ProtocolDissector, HexViewer, ConfirmationDialog
+
 from features.tcp_inspector import (
     TcpSessionAssemblyWindow,
     TcpStreamContext,
     gen_tcp_stream_key
 )
+
+from features.listener import PacketCapturerThread
 
 import hexlib
 import app_ctx
@@ -21,53 +23,11 @@ import scripting
 import netdsl
 
 import typing
-import threading
-
-class HexParticleWorker(QtCore.QThread):
-    packet_received = QtCore.pyqtSignal(ParsedPacket)
-
-    def __init__(self, hexp: HexParticleLib):
-        super().__init__()
-        self.running = True
-        self.hexp = hexp
-
-        self.pending_filter = None
-        self.filter_lock = threading.Lock()
-
-    
-    def update_filter(self, new_filter: str):
-        with self.filter_lock:
-            self.pending_filter = new_filter
-
-
-    def run(self):
-        try:
-            while self.running:
-                with self.filter_lock:
-                    if self.pending_filter is not None:
-                        filter_bytes = self.pending_filter.encode('UTF-8')
-
-                        filter_result = self.hexp.apply_filter(filter_bytes)
-                        if filter_result is None:
-                            print("Failed to apply filters!")
-                        
-                        self.pending_filter = None
-
-                packet = self.hexp.next_packet()
-                if packet:
-                    self.packet_received.emit(packet)
-        except Exception as e:
-            print(e)
-
-
-    def stop(self):
-        self.running = False
-
 
 class InterfaceListenerWindow(QtWidgets.QMainWindow):
     def __init__(self, ctx: app_ctx.AppContext):
         super().__init__()
-        self.worker = None
+        self.capture_thread = None
         self.packets: typing.List[ParsedPacket] = []
         self._ctx = ctx
 
@@ -176,9 +136,9 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
 
-        self.worker = HexParticleWorker(self._ctx._lib)
-        self.worker.packet_received.connect(self.ingest_incoming_packet)
-        self.worker.start()
+        self.capture_thread = PacketCapturerThread(self._ctx._lib)
+        self.capture_thread.packet_captured.connect(self.ingest_incoming_packet)
+        self.capture_thread.start()
 
 
     def ingest_incoming_packet(self, pp: ParsedPacket):
@@ -331,9 +291,9 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
 
     def stop_sniffing(self):
-        if self.worker:
-            self.worker.stop()
-            self.worker.wait()
+        if self.capture_thread:
+            self.capture_thread.stop()
+            self.capture_thread.wait()
         self.start_action.setEnabled(True)
         self.stop_action.setEnabled(False)
 
@@ -349,7 +309,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
 
     
     def handle_compiled_bpf_output(self, bpf_output):
-        if self.worker is None:
+        if self.capture_thread is None:
             dialog = ConfirmationDialog(
                 parent=self, 
                 message="Do you want to start the capture?",
@@ -359,8 +319,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             dialog.on_accept(self.start_sniffing)
             dialog.exec()
 
-        if self.worker is not None:
-            self.worker.update_filter(bpf_output)
+        if self.capture_thread is not None:
+            self.capture_thread.update_filter(bpf_output)
 
     
     def show_row_context_menu(self, position: QtCore.QPoint):

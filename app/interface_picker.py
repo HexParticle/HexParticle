@@ -19,8 +19,8 @@ from PyQt6.QtGui import (
     QIcon
 )
 
-from interface_listener import InterfaceListenerWindow
-from hexlib.lib_wrapper import HEX_OFFLINE_MODE, HEX_LIVE_MODE
+from features.listener import InterfaceListenerWindow
+from hexlib import HEX_OFFLINE_MODE, HEX_LIVE_MODE
 
 import app_ctx
 import style_loader
