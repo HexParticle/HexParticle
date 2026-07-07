@@ -16,11 +16,11 @@ from features.tcp_inspector import (
 
 from features.listener.packet_capturer import PacketCapturerThread
 from features.listener.packet_processor import PacketProcessorThread
+from features import scripting
 
 import hexlib
 import app_ctx
 import style_loader
-import scripting
 import netdsl
 
 import typing
