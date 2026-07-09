@@ -311,6 +311,23 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.stop_action.setEnabled(False)
 
     
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        if len(self.packets) > 0:
+            reply = QtWidgets.QMessageBox.question(
+                self, 'Confirm Close', 'Are you sure you want to close?',
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            )
+
+            if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+                self._ctx.dispose_library()
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            self._ctx.dispose_library()
+            event.accept()
+
+    
     def start_scripting_window(self):
         self.scripting_window = scripting.ScriptEditorWindow(
             netdsl.parse,

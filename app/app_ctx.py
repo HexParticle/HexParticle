@@ -25,3 +25,8 @@ class AppContext:
         
         if self._lib is not None:
             self._lib.initialize_hexp_instance(source, mode)
+
+    
+    def dispose_library(self):
+        if self._lib is not None:
+            self._lib.close()

@@ -19,12 +19,20 @@ PCAP offline mode
 HEX_OFFLINE_MODE 	= 0x2
 
 
+'''
+HexParticle library instance
+'''
 class HexInstance(ctypes.Structure):
     pass
 
-
+'''
+HexParticle library instance pointet type
+'''
 HexInstancePtr = ctypes.POINTER(HexInstance)
 
+'''
+Protocol node pointer type
+'''
 ProtocolNodePtr = ctypes.POINTER(ProtocolNode)
 
 # ctypes type aliases

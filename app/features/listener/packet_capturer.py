@@ -13,7 +13,6 @@ class PacketCapturerThread(QtCore.QThread):
 
     def __init__(self, hexp: HexParticleLib):
         super().__init__()
-        self.running = True
         self.hexp = hexp
 
         self.pending_filter = None
@@ -33,7 +32,7 @@ class PacketCapturerThread(QtCore.QThread):
 
     def run(self):
         try:
-            while self.running:
+            while not self.isInterruptionRequested():
                 with self.filter_lock:
                     if self.pending_filter is not None:
                         filter_bytes = self.pending_filter.encode('UTF-8')
@@ -52,4 +51,4 @@ class PacketCapturerThread(QtCore.QThread):
 
 
     def stop(self):
-        self.running = False
+        self.requestInterruption()
