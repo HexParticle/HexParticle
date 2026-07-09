@@ -7,6 +7,8 @@ import os
 
 from hexlib.node import ProtocolNode
 from hexlib.packet import ParsedPacket
+from hexlib.arp_cache import ARP_ALERT_CALLBACK_TYPE
+from hexlib.protocol import arp
 
 '''
 PCAP live mode
@@ -84,6 +86,12 @@ class HexParticleLib:
 
         self.lib.free_interfaces_names.argtypes = [ctypes.POINTER(ctypes.c_char_p), CInt]
         self.lib.free_interfaces_names.restype = None
+
+        self.lib.register_arp_alert_callback.argtypes = [ARP_ALERT_CALLBACK_TYPE]
+        self.lib.register_arp_alert_callback.restype = None
+
+        self.lib.analyze_arp_packet.argtypes = [ctypes.POINTER(arp.ARPHeader)]
+        self.lib.analyze_arp_packet.restype = None
 
         self._instance = None
 

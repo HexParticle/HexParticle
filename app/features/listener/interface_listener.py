@@ -16,6 +16,7 @@ from features.tcp_inspector import (
 
 from features.listener.packet_capturer import PacketCapturerThread
 from features.listener.packet_processor import PacketProcessorThread
+from features.listener.arp_security_monitor import ArpSecurityMonitor
 from features import scripting
 
 import hexlib
@@ -41,7 +42,11 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.packets: typing.List[ParsedPacket] = []
 
         # application context
-        self._ctx = ctx
+        self.__ctx = ctx
+
+        # ARP analyzer
+        self.__arp_security_monitor = ArpSecurityMonitor(self.__ctx)
+        self.__arp_security_monitor.alert_triggered.connect(self.__on_arp_alert)
 
         # the most recent packet
         self.most_recent_packet: ParsedPacket = None
@@ -149,7 +154,7 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
         self.start_action.setEnabled(False)
         self.stop_action.setEnabled(True)
 
-        self.capture_thread = PacketCapturerThread(self._ctx._lib)
+        self.capture_thread = PacketCapturerThread(self.__ctx._lib)
         self.capture_thread.on_packet_captured(self.__ingest_incoming_packet)
         self.capture_thread.start()
 
@@ -262,6 +267,8 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
     
     def construct_arp_row(self, dissected_pack: ParsedPacket):
         arp_layer = dissected_pack._layers[1]
+
+        self.__ctx._lib.lib.analyze_arp_packet(arp_layer)
         
         src_mac = hexlib.mac_to_str(arp_layer.sha)
         dst_mac = hexlib.mac_to_str(arp_layer.tha)
@@ -319,12 +326,12 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             )
 
             if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-                self._ctx.dispose_library()
+                self.__ctx.dispose_library()
                 event.accept()
             else:
                 event.ignore()
         else:
-            self._ctx.dispose_library()
+            self.__ctx.dispose_library()
             event.accept()
 
     
@@ -398,6 +405,17 @@ class InterfaceListenerWindow(QtWidgets.QMainWindow):
             stream_window = TcpSessionAssemblyWindow(stream)
             self.tcp_session_windows.append(stream_window)
             stream_window.show()
+
+    
+    def __on_arp_alert(self, alert_data):
+        QtWidgets.QMessageBox.critical(
+            self,
+            "Security Alert",
+            f"ARP Poisoning Detected!\n\n"
+            f"IP Host: {alert_data['ip']}\n"
+            f"Expected MAC: {alert_data['cached_mac']}\n"
+            f"Attacker MAC: {alert_data['poison_mac']}"
+        )
 
 
 class RowConstructionError(ValueError):

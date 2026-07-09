@@ -26,6 +26,7 @@ from hexlib.protocol import (
 
 from hexlib.node import ProtocolNode
 from hexlib.packet import ParsedPacket
+from hexlib import arp_cache
 
 
 def mac_to_str(bytes: bytearray) -> str:
@@ -33,12 +34,18 @@ def mac_to_str(bytes: bytearray) -> str:
         raise ValueError("length must be 6")
     
     return ":".join(map(hex, bytes)).replace("0x", "")
-    
+
+
 def ip_to_str(octets: typing.List[int]) -> str:
     if len(octets) != 4:
         raise ValueError("length must be 4")
 
     return ".".join(map(str, octets))
+
+
+def ip_int_to_str(ip_int: int) -> str:
+	return f"{ip_int & 0xFF}.{(ip_int >> 8) & 0xFF}.{(ip_int >> 16) & 0xFF}.{(ip_int >> 24) & 0xFF}"
+
 
 def ipv6_to_str(octets) -> str:
     if len(octets) != 16:
@@ -72,6 +79,7 @@ __all__ = [
     'COMMON_PORTS',
     'mac_to_str',
     'ip_to_str',
+    'ip_int_to_str',
     'ipv6_to_str',
     'ParsedPacket',
     'PacketError',
@@ -89,5 +97,6 @@ __all__ = [
     'TCPHeader',
     'UDPHeader',
     'TCPOption',
-    'VlanTag'
+    'VlanTag',
+    'arp_cache'
 ]
